@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AI Image Detector — Pitch Deck</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..900,0..100,0..1;1,9..144,300..900,0..100,0..1&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  @page { size: 13.333in 7.5in; margin: 0; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0b0a08;
+    --ink: #f3ede0;
+    --ink-mute: #8a8578;
+    --ink-dim: #4a4740;
+    --rule: #2a2723;
+    --accent: #d4ff00;
+    --serif: "Fraunces", "Times New Roman", serif;
+    --mono: "JetBrains Mono", "Courier New", monospace;
+  }
+
+  html, body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--serif);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .slide {
+    width: 1280px;
+    height: 720px;
+    page-break-after: always;
+    break-after: page;
+    padding: 70px 80px;
+    position: relative;
+    overflow: hidden;
+    background: var(--bg);
+  }
+  .slide:last-child { page-break-after: auto; break-after: auto; }
+
+  .hdr {
+    position: absolute;
+    top: 30px; left: 80px; right: 80px;
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .hdr__tag { color: var(--accent); border: 1px solid var(--accent); padding: 2px 7px; margin-right: 12px; letter-spacing: 0.16em; }
+
+  .ftr {
+    position: absolute;
+    bottom: 30px; left: 80px; right: 80px;
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+  }
+
+  .section-head {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 40px;
+  }
+  .section-head__no { color: var(--accent); }
+  .section-head__name { color: var(--ink); }
+  .section-head__rule {
+    flex: 1; height: 1px;
+    background: repeating-linear-gradient(to right, var(--rule) 0 6px, transparent 6px 10px);
+  }
+
+  /* ---------- SLIDE 1 · TITLE ---------- */
+  .title { display: flex; flex-direction: column; justify-content: center; padding-top: 80px; padding-bottom: 90px; }
+  .title__kicker {
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 36px;
+  }
+  .title__main {
+    font-family: var(--serif);
+    font-size: 152px;
+    line-height: 0.88;
+    font-weight: 300;
+    letter-spacing: -0.04em;
+    font-variation-settings: "opsz" 144, "SOFT" 0;
+  }
+  .title__main em {
+    display: block;
+    color: var(--accent);
+    font-style: italic;
+    padding-left: 120px;
+    font-variation-settings: "opsz" 144, "SOFT" 100, "WONK" 1;
+    width: fit-content;
+  }
+  .title__main em u { text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 0.15em; }
+  .title__sub {
+    margin-top: 44px;
+    font-family: var(--serif);
+    font-size: 23px;
+    font-style: italic;
+    color: var(--ink);
+    max-width: 740px;
+    font-variation-settings: "opsz" 30, "SOFT" 60;
+    line-height: 1.3;
+  }
+  .title__reticle {
+    position: absolute;
+    top: 132px; right: 100px;
+    width: 180px; height: 180px;
+  }
+  .title__reticle .corner { position: absolute; width: 20px; height: 20px; border: 1.5px solid var(--accent); }
+  .title__reticle .tl { top: 0; left: 0; border-right: 0; border-bottom: 0; }
+  .title__reticle .tr { top: 0; right: 0; border-left: 0; border-bottom: 0; }
+  .title__reticle .bl { bottom: 0; left: 0; border-right: 0; border-top: 0; }
+  .title__reticle .br { bottom: 0; right: 0; border-left: 0; border-top: 0; }
+  .title__reticle .crosshair {
+    position: absolute; top: 50%; left: 50%;
+    width: 64px; height: 64px;
+    transform: translate(-50%, -50%);
+    background:
+      linear-gradient(to right, transparent 48%, var(--accent) 48% 52%, transparent 52%),
+      linear-gradient(to bottom, transparent 48%, var(--accent) 48% 52%, transparent 52%);
+    opacity: 0.55;
+  }
+  .title__reticle .crosshair::after {
+    content: ""; position: absolute; top: 50%; left: 50%;
+    width: 10px; height: 10px; border: 1.5px solid var(--accent);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+  }
+  .title__reticle .coord {
+    position: absolute;
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+  }
+  .title__reticle .coord--tl { top: -16px; left: 0; }
+  .title__reticle .coord--br { bottom: -16px; right: 0; }
+
+  /* ---------- SLIDE 2 · GOAL ---------- */
+  .goal__title {
+    font-family: var(--serif);
+    font-size: 58px;
+    line-height: 1.1;
+    font-weight: 400;
+    max-width: 18ch;
+    font-variation-settings: "opsz" 100, "SOFT" 60;
+    margin-bottom: 44px;
+  }
+  .goal__title em {
+    font-style: italic;
+    color: var(--accent);
+    font-variation-settings: "opsz" 100, "SOFT" 100, "WONK" 1;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.15em;
+  }
+  .goal__body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px 60px;
+  }
+  .goal__col h3 {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 16px;
+    font-weight: 500;
+  }
+  .goal__col p {
+    font-family: var(--serif);
+    font-size: 17px;
+    line-height: 1.45;
+    color: var(--ink);
+  }
+  .goal__col p strong { font-weight: 600; color: var(--accent); font-style: normal; }
+  .goal__col--muted h3 { color: var(--ink-dim); }
+  .goal__col--muted p { color: var(--ink-mute); }
+
+  /* ---------- SLIDE 3 · DATA ---------- */
+  .data-grid {
+    display: grid;
+    grid-template-columns: 1.25fr 1fr;
+    gap: 50px;
+    align-items: start;
+  }
+  .data__headline {
+    font-family: var(--serif);
+    font-size: 62px;
+    line-height: 1.05;
+    font-weight: 400;
+    font-variation-settings: "opsz" 100, "SOFT" 60;
+  }
+  .data__headline em {
+    font-style: italic;
+    color: var(--accent);
+    font-variation-settings: "opsz" 100, "SOFT" 100, "WONK" 1;
+  }
+  .data__source { margin-top: 36px; }
+  .data__source__label {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--ink-mute);
+  }
+  .data__source__value {
+    font-family: var(--serif); font-size: 24px; font-style: italic; color: var(--ink);
+    margin-top: 6px; font-variation-settings: "opsz" 30, "SOFT" 60;
+  }
+  .data__source__url { font-family: var(--mono); font-size: 11px; color: var(--ink-dim); margin-top: 4px; }
+
+  .data__spec { border: 1px solid var(--rule); }
+  .data__spec-row {
+    display: flex;
+    padding: 13px 20px;
+    border-bottom: 1px solid var(--rule);
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+  .data__spec-row:last-child { border-bottom: 0; }
+  .data__spec-row .k { color: var(--ink-mute); flex: 1; letter-spacing: 0.06em; }
+  .data__spec-row .v { color: var(--ink); }
+  .data__spec-row .v--accent { color: var(--accent); font-weight: 500; }
+
+  .data__logo-mark {
+    position: absolute;
+    bottom: 80px; right: 80px;
+    width: 84px; height: 84px;
+    opacity: 0.9;
+  }
+  .data__logo-mark img { width: 100%; height: 100%; object-fit: contain; }
+
+  .data__breakdown {
+    margin-top: 26px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+  }
+  .data__breakdown__col { background: var(--bg); }
+  .data__breakdown__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 10px 16px 9px;
+    border-bottom: 1px solid var(--rule);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+  .data__breakdown__head .bk-label { color: var(--accent); font-weight: 700; }
+  .data__breakdown__head .bk-count { color: var(--ink); font-weight: 700; letter-spacing: 0.08em; }
+  .bk-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 16px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .bk-row:last-child { border-bottom: 0; }
+  .bk-row .bk-src { color: var(--ink-mute); letter-spacing: 0.04em; }
+  .bk-row .bk-n { color: var(--ink); letter-spacing: 0.08em; }
+
+  /* ---------- SLIDE 4 · PIPELINE ---------- */
+  .pipeline-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+  }
+  .pipeline-step {
+    background: var(--bg);
+    padding: 22px 20px 18px;
+    min-height: 180px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    position: relative;
+  }
+  .pipeline-step__no { font-family: var(--mono); font-size: 11px; color: var(--accent); letter-spacing: 0.18em; }
+  .pipeline-step__logo { width: 32px; height: 32px; margin-top: 2px; }
+  .pipeline-step__logo img { width: 100%; height: 100%; object-fit: contain; }
+  .pipeline-step__name {
+    font-family: var(--serif);
+    font-size: 22px;
+    font-style: italic;
+    font-weight: 400;
+    line-height: 1.05;
+    font-variation-settings: "opsz" 48, "SOFT" 70, "WONK" 1;
+    margin-top: 4px;
+  }
+  .pipeline-step__meta {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-mute);
+    letter-spacing: 0.08em;
+    margin-top: auto;
+  }
+
+  /* ---------- SLIDE 5 · COMPONENTS ---------- */
+  .components-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    height: 470px;
+  }
+  .comp {
+    background: var(--bg);
+    padding: 18px 20px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .comp__logo { width: 34px; height: 34px; flex-shrink: 0; margin-top: 2px; }
+  .comp__logo img { width: 100%; height: 100%; object-fit: contain; }
+  .comp__body { flex: 1; min-width: 0; }
+  .comp__name {
+    font-family: var(--serif);
+    font-size: 20px;
+    font-style: italic;
+    font-weight: 400;
+    line-height: 1;
+    font-variation-settings: "opsz" 48, "SOFT" 50, "WONK" 1;
+    margin-bottom: 5px;
+  }
+  .comp__role {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    color: var(--accent);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .comp__note {
+    font-family: var(--serif);
+    font-size: 12.5px;
+    line-height: 1.35;
+    color: var(--ink-mute);
+  }
+  .comp--end {
+    align-items: center;
+    justify-content: center;
+  }
+  .comp--end span {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-dim);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+
+  /* ---------- SLIDE 6 · WHY MLOPS ---------- */
+  .mlops {
+    display: grid;
+    grid-template-columns: 1fr 1.1fr;
+    gap: 56px;
+    align-items: start;
+  }
+  .mlops__headline {
+    font-family: var(--serif);
+    font-size: 58px;
+    line-height: 1.05;
+    font-weight: 400;
+    font-variation-settings: "opsz" 100, "SOFT" 60;
+  }
+  .mlops__headline em {
+    font-style: italic;
+    color: var(--accent);
+    font-variation-settings: "opsz" 100, "SOFT" 100, "WONK" 1;
+  }
+  .mlops__list {
+    list-style: none;
+    display: flex; flex-direction: column;
+    gap: 16px;
+  }
+  .mlops__list li {
+    font-family: var(--serif);
+    font-size: 17px;
+    line-height: 1.4;
+    padding-left: 56px;
+    position: relative;
+    color: var(--ink);
+  }
+  .mlops__list li::before {
+    content: attr(data-n);
+    position: absolute;
+    left: 0; top: 4px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.14em;
+    font-weight: 500;
+  }
+  .mlops__list strong { font-weight: 600; font-style: normal; color: var(--ink); }
+  .mlops__tag {
+    grid-column: 1 / -1;
+    margin-top: 18px;
+    padding: 22px 28px;
+    border: 1px solid rgba(212, 255, 0, 0.32);
+    background: rgba(212, 255, 0, 0.045);
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+  .mlops__tag__k {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .mlops__tag__v {
+    font-family: var(--serif);
+    font-size: 19px;
+    color: var(--ink);
+    font-style: italic;
+    font-variation-settings: "opsz" 30, "SOFT" 60;
+  }
+  .mlops__tag__v .paren { font-family: var(--mono); color: var(--accent); font-style: normal; font-size: 15px; padding: 0 6px; letter-spacing: 0.05em; }
+
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ SLIDE 1 · TITLE ═══════════════════ -->
+<section class="slide title">
+  <div class="hdr">
+    <div><span class="hdr__tag">CASE FILE</span>№ 001 · ZHAW — TSM_MachLeData</div>
+    <div>2026.04.20</div>
+  </div>
+  <div class="title__reticle" aria-hidden="true">
+    <span class="crosshair"></span>
+    <span class="corner tl"></span><span class="corner tr"></span>
+    <span class="corner bl"></span><span class="corner br"></span>
+    <span class="coord coord--tl">X 0412 · Y 0288</span>
+    <span class="coord coord--br">Δ 98.2%</span>
+  </div>
+  <div class="title__kicker">Authenticity Report</div>
+  <div class="title__main">
+    Is this image
+    <em><u>real?</u></em>
+  </div>
+  <div class="title__sub">
+    An MLOps pipeline for AI-generated vs. real image classification.
+  </div>
+  <div class="ftr">
+    <div>Team · Marcos · Artemi · Afshin · Jibin</div>
+    <div>ZHAW School of Engineering — Spring 2026</div>
+  </div>
+</section>
+
+<!-- ═══════════════════ SLIDE 2 · GOAL ═══════════════════ -->
+<section class="slide">
+  <div class="hdr">
+    <div><span class="hdr__tag">CASE FILE</span>№ 001 · ZHAW — TSM_MachLeData</div>
+    <div>§ 01 · GOAL</div>
+  </div>
+  <div class="section-head">
+    <span class="section-head__no">§ 01</span>
+    <span class="section-head__name">Goal &amp; Motivation</span>
+    <span class="section-head__rule"></span>
+  </div>
+  <h2 class="goal__title">
+    MLOps <em>pipeline</em> for AI-generated vs. real image classification.
+  </h2>
+  <div class="goal__body">
+    <div class="goal__col">
+      <h3>Context</h3>
+      <p>Generative models produce increasingly photorealistic images. Authenticity detection is a useful and well-scoped task that lets us focus on the <strong>operations</strong> layer of ML.</p>
+    </div>
+    <div class="goal__col">
+      <h3>Goal</h3>
+      <p>Build a reproducible MLOps pipeline that classifies an input image as <strong>real</strong> or <strong>ai-generated</strong> with a confidence score.</p>
+    </div>
+    <div class="goal__col">
+      <h3>In scope</h3>
+      <p>Data versioning · experiment tracking · model registry · CI automation · containerized serving.</p>
+    </div>
+    
+  </div>
+  <div class="ftr">
+    <div>pipeline over model</div>
+    <div>02 / 06</div>
+  </div>
+</section>
+
+<!-- ═══════════════════ SLIDE 3 · DATA ═══════════════════ -->
+<section class="slide">
+  <div class="hdr">
+    <div><span class="hdr__tag">CASE FILE</span>№ 001 · ZHAW — TSM_MachLeData</div>
+    <div>§ 02 · DATA</div>
+  </div>
+  <div class="section-head">
+    <span class="section-head__no">§ 02</span>
+    <span class="section-head__name">Data / Source of Truth</span>
+    <span class="section-head__rule"></span>
+  </div>
+  <div class="data-grid">
+    <div>
+      <h2 class="data__headline">
+        Every model is pinned to a <em>dataset version</em>.
+      </h2>
+      <div class="data__source">
+        <div class="data__source__label">Source</div>
+        <div class="data__source__value">AI Generated Images vs. Real Images</div>
+        <div class="data__source__url">kaggle.com/datasets/tristanzhang32/ai-generated-images-vs-real-images</div>
+      </div>
+      <div class="data__breakdown">
+        <div class="data__breakdown__col">
+          <div class="data__breakdown__head">
+            <span class="bk-label">Fake</span>
+            <span class="bk-count">30,000</span>
+          </div>
+          <div class="bk-row"><span class="bk-src">Stable Diffusion</span><span class="bk-n">10,000</span></div>
+          <div class="bk-row"><span class="bk-src">MidJourney</span><span class="bk-n">10,000</span></div>
+          <div class="bk-row"><span class="bk-src">DALL-E</span><span class="bk-n">10,000</span></div>
+        </div>
+        <div class="data__breakdown__col">
+          <div class="data__breakdown__head">
+            <span class="bk-label">Real</span>
+            <span class="bk-count">30,000</span>
+          </div>
+          <div class="bk-row"><span class="bk-src">Pexels / Unsplash</span><span class="bk-n">22,500</span></div>
+          <div class="bk-row"><span class="bk-src">WikiArt</span><span class="bk-n">7,500</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="data__spec">
+      <div class="data__spec-row"><span class="k">labels</span><span class="v v--accent">real / fake</span></div>
+      <div class="data__spec-row"><span class="k">task</span><span class="v">binary classification</span></div>
+      <div class="data__spec-row"><span class="k">splits</span><span class="v">train / val / test</span></div>
+      <div class="data__spec-row"><span class="k">versioning</span><span class="v v--accent">DVC</span></div>
+      <div class="data__spec-row"><span class="k">storage</span><span class="v">external remote</span></div>
+      <div class="data__spec-row"><span class="k">license</span><span class="v">academic use</span></div>
+    </div>
+  </div>
+  <div class="data__logo-mark"><img src="../imgs/kaggle.svg" alt=""></div>
+  <div class="ftr">
+    <div>dataset snapshot → DVC hash → git commit</div>
+    <div>03 / 06</div>
+  </div>
+</section>
+
+<!-- ═══════════════════ SLIDE 4 · PIPELINE ═══════════════════ -->
+<section class="slide">
+  <div class="hdr">
+    <div><span class="hdr__tag">CASE FILE</span>№ 001 · ZHAW — TSM_MachLeData</div>
+    <div>§ 03 · PIPELINE</div>
+  </div>
+  <div class="section-head">
+    <span class="section-head__no">§ 03</span>
+    <span class="section-head__name">Pipeline / Flow Map</span>
+    <span class="section-head__rule"></span>
+  </div>
+  <ol class="pipeline-grid">
+    <li class="pipeline-step">
+      <div class="pipeline-step__no">01</div>
+      <div class="pipeline-step__logo"><img src="../imgs/kaggle.svg" alt=""></div>
+      <div class="pipeline-step__name">Kaggle</div>
+      <div class="pipeline-step__meta">ingest · raw/</div>
+    </li>
+    <li class="pipeline-step">
+      <div class="pipeline-step__no">02</div>
+      <div class="pipeline-step__logo"><img src="../imgs/dvc.svg" alt=""></div>
+      <div class="pipeline-step__name">DVC</div>
+      <div class="pipeline-step__meta">versioned · hashed</div>
+    </li>
+    <li class="pipeline-step">
+      <div class="pipeline-step__no">03</div>
+      <div class="pipeline-step__logo"><img src="../imgs/pytorch.svg" alt=""></div>
+      <div class="pipeline-step__name">PyTorch</div>
+      <div class="pipeline-step__meta">train · EfficientNet-B0</div>
+    </li>
+    <li class="pipeline-step">
+      <div class="pipeline-step__no">04</div>
+      <div class="pipeline-step__logo"><img src="../imgs/mlflow.svg" alt=""></div>
+      <div class="pipeline-step__name">MLflow</div>
+      <div class="pipeline-step__meta">metrics · registry</div>
+    </li>
+    <li class="pipeline-step">
+      <div class="pipeline-step__no">05</div>
+      <div class="pipeline-step__logo"><img src="../imgs/github-actions.svg" alt=""></div>
+      <div class="pipeline-step__name">GH Actions</div>
+      <div class="pipeline-step__meta">CI · on push(main)</div>
+    </li>
+    <li class="pipeline-step">
+      <div class="pipeline-step__no">06</div>
+      <div class="pipeline-step__logo"><img src="../imgs/onnx.svg" alt=""></div>
+      <div class="pipeline-step__name">ONNX</div>
+      <div class="pipeline-step__meta">export · portable</div>
+    </li>
+    <li class="pipeline-step">
+      <div class="pipeline-step__no">07</div>
+      <div class="pipeline-step__logo"><img src="../imgs/fastapi.svg" alt=""></div>
+      <div class="pipeline-step__name">FastAPI + Docker</div>
+      <div class="pipeline-step__meta">serve · /predict</div>
+    </li>
+    <li class="pipeline-step">
+      <div class="pipeline-step__no">08</div>
+      <div class="pipeline-step__logo"><img src="../imgs/streamlit.svg" alt=""></div>
+      <div class="pipeline-step__name">Streamlit</div>
+      <div class="pipeline-step__meta">demo · UI</div>
+    </li>
+  </ol>
+  <div class="ftr">
+    <div>each model ← (commit · data-version · run)</div>
+    <div>04 / 06</div>
+  </div>
+</section>
+
+<!-- ═══════════════════ SLIDE 5 · COMPONENTS ═══════════════════ -->
+<section class="slide">
+  <div class="hdr">
+    <div><span class="hdr__tag">CASE FILE</span>№ 001 · ZHAW — TSM_MachLeData</div>
+    <div>§ 04 · COMPONENTS</div>
+  </div>
+  <div class="section-head">
+    <span class="section-head__no">§ 04</span>
+    <span class="section-head__name">Components / Entered Into Evidence</span>
+    <span class="section-head__rule"></span>
+  </div>
+  <div class="components-grid">
+    <article class="comp"><div class="comp__logo"><img src="../imgs/dvc.svg" alt=""></div><div class="comp__body"><div class="comp__name">DVC</div><div class="comp__role">Data versioning</div><div class="comp__note">Pins each snapshot to a commit.</div></div></article>
+    <article class="comp"><div class="comp__logo"><img src="../imgs/git.svg" alt=""></div><div class="comp__body"><div class="comp__name">Git</div><div class="comp__role">Source control</div><div class="comp__note">Links runs to a commit SHA.</div></div></article>
+    <article class="comp"><div class="comp__logo"><img src="../imgs/pytorch.svg" alt=""></div><div class="comp__body"><div class="comp__name">PyTorch</div><div class="comp__role">Training</div><div class="comp__note">EfficientNet-B0 fine-tune.</div></div></article>
+    <article class="comp"><div class="comp__logo"><img src="../imgs/mlflow.svg" alt=""></div><div class="comp__body"><div class="comp__name">MLflow</div><div class="comp__role">Track &amp; register</div><div class="comp__note">Metrics, artifacts, stages.</div></div></article>
+    <article class="comp"><div class="comp__logo"><img src="../imgs/github-actions.svg" alt=""></div><div class="comp__body"><div class="comp__name">GH Actions</div><div class="comp__role">CI automation</div><div class="comp__note">Train → eval → register on push.</div></div></article>
+    <article class="comp"><div class="comp__logo"><img src="../imgs/onnx.svg" alt=""></div><div class="comp__body"><div class="comp__name">ONNX</div><div class="comp__role">Portable export</div><div class="comp__note">Framework-agnostic inference.</div></div></article>
+    <article class="comp"><div class="comp__logo"><img src="../imgs/fastapi.svg" alt=""></div><div class="comp__body"><div class="comp__name">FastAPI</div><div class="comp__role">REST serving</div><div class="comp__note">Lightweight endpoint for ONNX.</div></div></article>
+    <article class="comp"><div class="comp__logo"><img src="../imgs/docker.svg" alt=""></div><div class="comp__body"><div class="comp__name">Docker</div><div class="comp__role">Containerization</div><div class="comp__note">Reproducible runtime.</div></div></article>
+    <article class="comp"><div class="comp__logo"><img src="../imgs/streamlit.svg" alt=""></div><div class="comp__body"><div class="comp__name">Streamlit</div><div class="comp__role">Demo UI</div><div class="comp__note">Interactive upload &amp; prediction.</div></div></article>
+    <article class="comp"><div class="comp__logo"><img src="../imgs/github.svg" alt=""></div><div class="comp__body"><div class="comp__name">GitHub</div><div class="comp__role">Collaboration</div><div class="comp__note">Code, PRs, workflows.</div></div></article>
+    <article class="comp"><div class="comp__logo"><img src="../imgs/kaggle.svg" alt=""></div><div class="comp__body"><div class="comp__name">Kaggle</div><div class="comp__role">Data source</div><div class="comp__note">AI vs real image dataset.</div></div></article>
+    <article class="comp comp--end"><span>[ end of list ]</span></article>
+  </div>
+  <div class="ftr">
+    <div>eleven tools · one pipeline</div>
+    <div>05 / 06</div>
+  </div>
+</section>
+
+<!-- ═══════════════════ SLIDE 6 · WHY MLOPS ═══════════════════ -->
+<section class="slide">
+  <div class="hdr">
+    <div><span class="hdr__tag">CASE FILE</span>№ 001 · ZHAW — TSM_MachLeData</div>
+    <div>§ 05 · WHY MLOPS</div>
+  </div>
+  <div class="section-head">
+    <span class="section-head__no">§ 05</span>
+    <span class="section-head__name">Why this is MLOps — not just ML</span>
+    <span class="section-head__rule"></span>
+  </div>
+  <div class="mlops">
+    <h2 class="mlops__headline">
+      Any historical run can be <em>rebuilt.</em>
+    </h2>
+    <ul class="mlops__list">
+      <li data-n="01 —"><strong>Reproducibility</strong> — rebuild any past run from commit + DVC hash.</li>
+      <li data-n="02 —"><strong>Traceability</strong> — MLflow links metrics ↔ params ↔ artifacts ↔ data.</li>
+      <li data-n="03 —"><strong>Automation</strong> — CI retrains · evaluates · registers on every merge.</li>
+      <li data-n="04 —"><strong>Deployability</strong> — ONNX + Docker make the model portable.</li>
+      <li data-n="05 —"><strong>Iterability</strong> — new data → re-version → retrain → re-register.</li>
+    </ul>
+    <div class="mlops__tag">
+      <div class="mlops__tag__k">Every model =</div>
+      <div class="mlops__tag__v"><span class="paren">(</span>commit<span class="paren">·</span>data-version<span class="paren">·</span>run<span class="paren">)</span> — if any one is missing, the model is <em>not</em> reproducible.</div>
+    </div>
+  </div>
+  <div class="ftr">
+    <div>end of report</div>
+    <div>06 / 06</div>
+  </div>
+</section>
+
+</body>
+</html>

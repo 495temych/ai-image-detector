@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Authenticity Report № 001 — AI Image Detector</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..900,0..100,0..1;1,9..144,300..900,0..100,0..1&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead__left">
+    <span class="tag">CASE FILE</span>
+    <span class="id">№ 001 · ZHAW — TSM_MachLeData</span>
+  </div>
+  <div class="masthead__right">
+    <span class="status"><span class="dot"></span> IN REVIEW</span>
+    <span class="date">2026.04.20</span>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero__reticle" aria-hidden="true">
+    <span class="crosshair"></span>
+    <span class="corner tl"></span><span class="corner tr"></span>
+    <span class="corner bl"></span><span class="corner br"></span>
+    <span class="coord coord--tl">X 0412 · Y 0288</span>
+    <span class="coord coord--br">Δ 98.2%</span>
+  </div>
+  <span class="hero__kicker">Authenticity Report</span>
+  <h1 class="hero__title">
+    <span class="hero__line">Is this image</span>
+    <span class="hero__line hero__line--italic"><em>real</em>?</span>
+  </h1>
+  <p class="hero__lede">
+    An end-to-end <strong>MLOps pipeline</strong> for classifying images as
+    <span class="tok tok--ok">real</span> or <span class="tok tok--warn">ai-generated</span>.
+    The deliverable is the pipeline — versioning, tracking, automation,
+    deployment — <em>not</em> the model.
+  </p>
+  <div class="hero__meta">
+    <div><span class="label">Course</span><span class="value">Machine Learning &amp; Data in Operation</span></div>
+    <div><span class="label">Institution</span><span class="value">ZHAW School of Engineering</span></div>
+    <div><span class="label">Term</span><span class="value">Spring 2026</span></div>
+  </div>
+</section>
+
+<section class="section" id="brief">
+  <div class="section__head">
+    <span class="section__no">§ 01</span>
+    <span class="section__name">BRIEF</span>
+    <span class="section__rule"></span>
+  </div>
+  <p class="brief__lead">
+    Generative models now produce images that <em>convincingly</em> pass
+    for photographs. Detection is a well-scoped problem — which lets us
+    spend our effort on the <em>operations</em> layer.
+  </p>
+  <div class="brief__split">
+    <div class="brief__col">
+      <h3 class="col-title">In scope</h3>
+      <ul class="checklist">
+        <li>Data versioning tied to every run</li>
+        <li>Metrics · params · artifacts tracked per run</li>
+        <li>Model registry with promotion stages</li>
+        <li>CI that retrains · evaluates · registers</li>
+        <li>Packaged serving behind a container</li>
+      </ul>
+    </div>
+    <div class="brief__col brief__col--muted">
+      <h3 class="col-title">Not in scope</h3>
+      <ul class="checklist checklist--dim">
+        <li>State-of-the-art detection accuracy</li>
+        <li>Novel model architecture</li>
+        <li>Adversarial robustness research</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="pipeline">
+  <div class="section__head">
+    <span class="section__no">§ 02</span>
+    <span class="section__name">PIPELINE / FLOW.MAP</span>
+    <span class="section__rule"></span>
+  </div>
+  <ol class="pipeline">
+    <li class="step"><span class="step__no">01</span><span class="step__label">Kaggle</span><span class="step__meta">ingest · raw/</span></li>
+    <li class="step"><span class="step__no">02</span><span class="step__label">DVC</span><span class="step__meta">versioned · hashed</span></li>
+    <li class="step"><span class="step__no">03</span><span class="step__label">PyTorch</span><span class="step__meta">train · EfficientNet-B0</span></li>
+    <li class="step"><span class="step__no">04</span><span class="step__label">MLflow</span><span class="step__meta">metrics · registry</span></li>
+    <li class="step"><span class="step__no">05</span><span class="step__label">GH&nbsp;Actions</span><span class="step__meta">CI · on push(main)</span></li>
+    <li class="step"><span class="step__no">06</span><span class="step__label">ONNX</span><span class="step__meta">export · portable</span></li>
+    <li class="step"><span class="step__no">07</span><span class="step__label">FastAPI + Docker</span><span class="step__meta">serve · /predict</span></li>
+    <li class="step"><span class="step__no">08</span><span class="step__label">Streamlit</span><span class="step__meta">demo · UI</span></li>
+  </ol>
+</section>
+
+<section class="section" id="components">
+  <div class="section__head">
+    <span class="section__no">§ 03</span>
+    <span class="section__name">COMPONENTS / ENTERED INTO EVIDENCE</span>
+    <span class="section__rule"></span>
+  </div>
+  <div class="components">
+    <article class="tool">
+      <div class="tool__logo"><img src="../imgs/kaggle.svg" alt=""></div>
+      <h3 class="tool__name">Kaggle</h3>
+      <p class="tool__role">Dataset source</p>
+      <p class="tool__note">AI-Generated Images vs. Real Images.</p>
+      <span class="tool__stage">§ 01 · INGEST</span>
+    </article>
+    <article class="tool">
+      <div class="tool__logo"><img src="../imgs/dvc.svg" alt=""></div>
+      <h3 class="tool__name">DVC</h3>
+      <p class="tool__role">Data versioning</p>
+      <p class="tool__note">Pins each dataset snapshot to a commit.</p>
+      <span class="tool__stage">§ 02 · VERSION</span>
+    </article>
+    <article class="tool">
+      <div class="tool__logo"><img src="../imgs/git.svg" alt=""></div>
+      <h3 class="tool__name">Git</h3>
+      <p class="tool__role">Source control</p>
+      <p class="tool__note">Every model links back to its commit SHA.</p>
+      <span class="tool__stage">§ 02 · VERSION</span>
+    </article>
+    <article class="tool">
+      <div class="tool__logo"><img src="../imgs/pytorch.svg" alt=""></div>
+      <h3 class="tool__name">PyTorch</h3>
+      <p class="tool__role">Model training</p>
+      <p class="tool__note">Fine-tunes an EfficientNet-B0 backbone.</p>
+      <span class="tool__stage">§ 03 · TRAIN</span>
+    </article>
+    <article class="tool">
+      <div class="tool__logo"><img src="../imgs/mlflow.svg" alt=""></div>
+      <h3 class="tool__name">MLflow</h3>
+      <p class="tool__role">Tracking &amp; registry</p>
+      <p class="tool__note">Metrics, params, artifacts, promotion.</p>
+      <span class="tool__stage">§ 04 · TRACK</span>
+    </article>
+    <article class="tool">
+      <div class="tool__logo"><img src="../imgs/github-actions.svg" alt=""></div>
+      <h3 class="tool__name">GitHub Actions</h3>
+      <p class="tool__role">Continuous integration</p>
+      <p class="tool__note">Train → evaluate → register on push.</p>
+      <span class="tool__stage">§ 05 · AUTOMATE</span>
+    </article>
+    <article class="tool">
+      <div class="tool__logo"><img src="../imgs/onnx.svg" alt=""></div>
+      <h3 class="tool__name">ONNX</h3>
+      <p class="tool__role">Portable inference</p>
+      <p class="tool__note">Framework-agnostic production export.</p>
+      <span class="tool__stage">§ 06 · EXPORT</span>
+    </article>
+    <article class="tool">
+      <div class="tool__logo"><img src="../imgs/fastapi.svg" alt=""></div>
+      <h3 class="tool__name">FastAPI</h3>
+      <p class="tool__role">REST serving</p>
+      <p class="tool__note">Lightweight endpoint for the ONNX model.</p>
+      <span class="tool__stage">§ 07 · SERVE</span>
+    </article>
+    <article class="tool">
+      <div class="tool__logo"><img src="../imgs/docker.svg" alt=""></div>
+      <h3 class="tool__name">Docker</h3>
+      <p class="tool__role">Containerization</p>
+      <p class="tool__note">Reproducible runtime for the API.</p>
+      <span class="tool__stage">§ 07 · SERVE</span>
+    </article>
+    <article class="tool">
+      <div class="tool__logo"><img src="../imgs/streamlit.svg" alt=""></div>
+      <h3 class="tool__name">Streamlit</h3>
+      <p class="tool__role">Demo UI</p>
+      <p class="tool__note">Interactive image upload &amp; prediction.</p>
+      <span class="tool__stage">§ 08 · DEMO</span>
+    </article>
+    <article class="tool">
+      <div class="tool__logo"><img src="../imgs/github.svg" alt=""></div>
+      <h3 class="tool__name">GitHub</h3>
+      <p class="tool__role">Repo &amp; collaboration</p>
+      <p class="tool__note">Hosts code, PRs, and CI workflows.</p>
+      <span class="tool__stage">§ 05 · AUTOMATE</span>
+    </article>
+  </div>
+</section>
+
+<section class="section" id="telemetry">
+  <div class="section__head">
+    <span class="section__no">§ 04</span>
+    <span class="section__name">TELEMETRY / WHAT.GETS.TRACKED</span>
+    <span class="section__rule"></span>
+  </div>
+  <div class="telemetry">
+<pre class="readout"><span class="prompt">$</span> mlflow runs describe --run-id latest
+<span class="k">code.commit</span>         · 8a4f…e12c         <span class="mono-mute">(git)</span>
+<span class="k">data.version</span>        · d41d8cd98f00…      <span class="mono-mute">(dvc)</span>
+<span class="k">params.lr</span>           · 1.0e-4
+<span class="k">params.epochs</span>       · 15
+<span class="k">params.batch</span>        · 32
+<span class="k">metrics.val_acc</span>     · 0.934
+<span class="k">metrics.val_auroc</span>   · 0.972
+<span class="k">artifact.model.pt</span>   · 81.3 MB
+<span class="k">artifact.model.onnx</span> · 80.7 MB
+<span class="k">registry.stage</span>      · <span class="ok">STAGING</span>
+<span class="k">ci.workflow</span>         · train-eval-register.yml
+<span class="k">ci.run_id</span>           · 7142
+<span class="prompt">$</span> <span class="cursor">&nbsp;</span></pre>
+    <aside class="telemetry__note">
+      <h3>Every model is a <em>triple</em>.</h3>
+      <p>
+        <span class="triple">(commit, data-version, run)</span>
+        — if any one of those is missing, the model is not reproducible
+        and, in an operational sense, not <em>real</em>.
+      </p>
+    </aside>
+  </div>
+</section>
+
+<footer class="colophon">
+  <div>
+    <p class="colophon__title">Colophon</p>
+    <p class="colophon__body">
+      Set in <em>Fraunces</em> and <em>JetBrains&nbsp;Mono</em>.
+      Tool marks © their respective owners — used under academic fair use.
+    </p>
+  </div>
+  <div>
+    <p class="colophon__title">Team</p>
+    <ul class="team">
+      <li>[Name 1]</li><li>[Name 2]</li><li>[Name 3]</li><li>[Name 4]</li>
+    </ul>
+    <p class="colophon__meta">ZHAW SoE · TSM_MachLeData · Spring 2026</p>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
