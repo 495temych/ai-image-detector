@@ -157,6 +157,144 @@
   .title__reticle .coord--tl { top: -16px; left: 0; }
   .title__reticle .coord--br { bottom: -16px; right: 0; }
 
+  /* ---------- SLIDE 1 · COMPARE PANEL ---------- */
+  .title__coord {
+    position: absolute;
+    top: 78px;
+    right: 44px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 0.18em;
+    z-index: 4;
+  }
+  .title__compare {
+    position: absolute;
+    top: 104px;
+    right: 44px;
+    width: 600px;
+    height: 402px;
+    font-family: var(--mono);
+  }
+  .title__compare .cframe {
+    position: absolute; inset: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    background: #000;
+    border: 1px solid rgba(212, 255, 0, 0.18);
+  }
+  .cpanel {
+    position: relative;
+    overflow: hidden;
+    background: #0a0807;
+  }
+  .cpanel__img {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    filter: grayscale(1) contrast(1.1) brightness(0.7);
+    opacity: 0.55;
+  }
+  .cpanel__tint {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    mix-blend-mode: screen;
+  }
+  .cpanel--ai .cpanel__tint {
+    background:
+      radial-gradient(ellipse 70% 85% at 50% 58%, rgba(160, 90, 245, 0.55) 0%, rgba(70, 35, 150, 0.22) 45%, transparent 78%),
+      linear-gradient(180deg, rgba(18, 5, 50, 0.5) 0%, rgba(45, 18, 90, 0.15) 40%, rgba(18, 5, 50, 0.55) 100%);
+  }
+  .cpanel--real .cpanel__tint {
+    background:
+      radial-gradient(ellipse 70% 85% at 50% 58%, rgba(160, 255, 90, 0.42) 0%, rgba(80, 150, 35, 0.2) 45%, transparent 78%),
+      linear-gradient(180deg, rgba(10, 25, 5, 0.55) 0%, rgba(45, 90, 22, 0.15) 40%, rgba(10, 25, 5, 0.55) 100%);
+  }
+  .cpanel__scan {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    background-image: repeating-linear-gradient(0deg, rgba(255,255,255,0.045) 0 1px, transparent 1px 3px);
+    opacity: 0.55;
+  }
+  .cpanel__label {
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    text-align: center;
+    line-height: 1.9;
+    white-space: nowrap;
+    z-index: 2;
+  }
+  .cpanel--ai .cpanel__label { color: rgba(225, 195, 255, 0.55); }
+  .cpanel--real .cpanel__label { color: rgba(225, 255, 185, 0.55); }
+  .cpanel__tag {
+    position: absolute;
+    bottom: 14px;
+    right: 14px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 0.14em;
+    border: 1px solid var(--accent);
+    padding: 3px 9px;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 3;
+  }
+  .title__compare .ccorner {
+    position: absolute;
+    width: 18px; height: 18px;
+    border: 1.5px solid var(--accent);
+    z-index: 4;
+  }
+  .title__compare .ccorner.tl { top: -1px; left: -1px; border-right: 0; border-bottom: 0; }
+  .title__compare .ccorner.tr { top: -1px; right: -1px; border-left: 0; border-bottom: 0; }
+  .title__compare .ccorner.bl { bottom: -1px; left: -1px; border-right: 0; border-top: 0; }
+  .title__compare .ccorner.br { bottom: -1px; right: -1px; border-left: 0; border-top: 0; }
+  .title__compare .cdivider {
+    position: absolute;
+    top: 0; bottom: 0;
+    left: 50%;
+    width: 1px;
+    background: var(--accent);
+    z-index: 2;
+    transform: translateX(-0.5px);
+  }
+  .title__compare .cdivider__marker {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 10px; height: 18px;
+    transform: translate(-50%, -50%);
+    background: var(--bg);
+    border: 1.5px solid var(--accent);
+    z-index: 3;
+  }
+  .title__compare__legend {
+    position: absolute;
+    left: 0; right: 0;
+    bottom: -24px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.24em;
+    color: var(--ink-mute);
+    text-transform: uppercase;
+  }
+  .title__compare__legend > span { padding: 2px 0; }
+  .title__compare__legend .ldot {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    margin-right: 8px;
+    vertical-align: 1px;
+  }
+  .title__compare__legend .ldot--ai { background: #b46dff; box-shadow: 0 0 8px #b46dff; }
+  .title__compare__legend .ldot--real { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+
   /* ---------- SLIDE 2 · GOAL ---------- */
   .goal__title {
     font-family: var(--serif);
@@ -459,12 +597,33 @@
     <div><span class="hdr__tag">CASE FILE</span>№ 001 · ZHAW — TSM_MachLeData</div>
     <div>2026.04.20</div>
   </div>
-  <div class="title__reticle" aria-hidden="true">
-    <span class="crosshair"></span>
-    <span class="corner tl"></span><span class="corner tr"></span>
-    <span class="corner bl"></span><span class="corner br"></span>
-    <span class="coord coord--tl">X 0412 · Y 0288</span>
-    <span class="coord coord--br">Δ 98.2%</span>
+  <span class="title__coord">X 0412 · Y 0288 · Δ 98.2%</span>
+  <div class="title__compare" aria-hidden="true">
+    <span class="ccorner tl"></span>
+    <span class="ccorner tr"></span>
+    <span class="ccorner bl"></span>
+    <span class="ccorner br"></span>
+    <div class="cframe">
+      <div class="cpanel cpanel--ai">
+        <img class="cpanel__img" src="../imgs/sample_ai.jpg" alt="" onerror="this.style.display='none'">
+        <div class="cpanel__tint"></div>
+        <div class="cpanel__scan"></div>
+        <span class="cpanel__label">[ AI GENERATED<br>&nbsp;&nbsp;IMAGE ]</span>
+        <span class="cpanel__tag">Δ 98.2%</span>
+      </div>
+      <div class="cpanel cpanel--real">
+        <img class="cpanel__img" src="../imgs/sample_real.jpg" alt="" onerror="this.style.display='none'">
+        <div class="cpanel__tint"></div>
+        <div class="cpanel__scan"></div>
+        <span class="cpanel__label">[ REAL<br>&nbsp;&nbsp;PHOTOGRAPH ]</span>
+        <span class="cpanel__tag">✓ VERIFIED</span>
+      </div>
+    </div>
+    <div class="cdivider"><span class="cdivider__marker"></span></div>
+    <div class="title__compare__legend">
+      <span><span class="ldot ldot--ai"></span>AI GENERATED</span>
+      <span><span class="ldot ldot--real"></span>REAL IMAGE</span>
+    </div>
   </div>
   <div class="title__kicker">Authenticity Report</div>
   <div class="title__main">
