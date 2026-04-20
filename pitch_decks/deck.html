@@ -634,7 +634,7 @@
     An MLOps pipeline for AI-generated vs. real image classification.
   </div>
   <div class="ftr">
-    <div>Team · Marcos · Artemi · Afshin · Jibin</div>
+    <div>Team · Marcos Costa · Artemii Ponomarenko· Afshin Khosroshahi· Jibin Mathew Peechatt</div>
     <div>ZHAW School of Engineering — Spring 2026</div>
   </div>
 </section>
@@ -810,15 +810,15 @@
     <span class="section-head__rule"></span>
   </div>
   <div class="components-grid">
-    <article class="comp"><div class="comp__logo"><img src="../imgs/dvc.svg" alt=""></div><div class="comp__body"><div class="comp__name">DVC</div><div class="comp__role">Data versioning</div><div class="comp__note">Pins each snapshot to a commit.</div></div></article>
-    <article class="comp"><div class="comp__logo"><img src="../imgs/git.svg" alt=""></div><div class="comp__body"><div class="comp__name">Git</div><div class="comp__role">Source control</div><div class="comp__note">Links runs to a commit SHA.</div></div></article>
+    <article class="comp"><div class="comp__logo"><img src="../imgs/dvc.svg" alt=""></div><div class="comp__body"><div class="comp__name">DVC</div><div class="comp__role">Data versioning</div><div class="comp__note">Version-controls datasets via hashes and links them to Git commits through metadata pointers.</div></div></article>
+    <article class="comp"><div class="comp__logo"><img src="../imgs/git.svg" alt=""></div><div class="comp__body"><div class="comp__name">Git</div><div class="comp__role">Source control</div><div class="comp__note">Source control for code; commit SHA used by CI/MLflow to trace experiments.</div></div></article>
     <article class="comp"><div class="comp__logo"><img src="../imgs/pytorch.svg" alt=""></div><div class="comp__body"><div class="comp__name">PyTorch</div><div class="comp__role">Training</div><div class="comp__note">EfficientNet-B0 fine-tune.</div></div></article>
-    <article class="comp"><div class="comp__logo"><img src="../imgs/mlflow.svg" alt=""></div><div class="comp__body"><div class="comp__name">MLflow</div><div class="comp__role">Track &amp; register</div><div class="comp__note">Metrics, artifacts, stages.</div></div></article>
-    <article class="comp"><div class="comp__logo"><img src="../imgs/github-actions.svg" alt=""></div><div class="comp__body"><div class="comp__name">GH Actions</div><div class="comp__role">CI automation</div><div class="comp__note">Train → eval → register on push.</div></div></article>
-    <article class="comp"><div class="comp__logo"><img src="../imgs/onnx.svg" alt=""></div><div class="comp__body"><div class="comp__name">ONNX</div><div class="comp__role">Portable export</div><div class="comp__note">Framework-agnostic inference.</div></div></article>
-    <article class="comp"><div class="comp__logo"><img src="../imgs/fastapi.svg" alt=""></div><div class="comp__body"><div class="comp__name">FastAPI</div><div class="comp__role">REST serving</div><div class="comp__note">Lightweight endpoint for ONNX.</div></div></article>
-    <article class="comp"><div class="comp__logo"><img src="../imgs/docker.svg" alt=""></div><div class="comp__body"><div class="comp__name">Docker</div><div class="comp__role">Containerization</div><div class="comp__note">Reproducible runtime.</div></div></article>
-    <article class="comp"><div class="comp__logo"><img src="../imgs/streamlit.svg" alt=""></div><div class="comp__body"><div class="comp__name">Streamlit</div><div class="comp__role">Demo UI</div><div class="comp__note">Interactive upload &amp; prediction.</div></div></article>
+    <article class="comp"><div class="comp__logo"><img src="../imgs/mlflow.svg" alt=""></div><div class="comp__body"><div class="comp__name">MLflow</div><div class="comp__role">Track &amp; register</div><div class="comp__note">Experiment tracking and model registry (metrics, parameters, artifacts, model lifecycle stages).</div></div></article>
+    <article class="comp"><div class="comp__logo"><img src="../imgs/github-actions.svg" alt=""></div><div class="comp__body"><div class="comp__name">GH Actions</div><div class="comp__role">CI automation</div><div class="comp__note">CI pipeline to trigger training, evaluation, and optional model registration on changes.</div></div></article>
+    <article class="comp"><div class="comp__logo"><img src="../imgs/onnx.svg" alt=""></div><div class="comp__body"><div class="comp__name">ONNX</div><div class="comp__role">Portable export</div><div class="comp__note">Portable model format enabling cross-framework inference via runtimes; decouples training from serving.</div></div></article>
+    <article class="comp"><div class="comp__logo"><img src="../imgs/fastapi.svg" alt=""></div><div class="comp__body"><div class="comp__name">FastAPI</div><div class="comp__role">REST serving</div><div class="comp__note">Lightweight REST API layer for serving ML models (e.g., ONNX).</div></div></article>
+    <article class="comp"><div class="comp__logo"><img src="../imgs/docker.svg" alt=""></div><div class="comp__body"><div class="comp__name">Docker</div><div class="comp__role">Containerization</div><div class="comp__note">Containerized runtime ensuring consistent deployment across environments.</div></div></article>
+    <article class="comp"><div class="comp__logo"><img src="../imgs/streamlit.svg" alt=""></div><div class="comp__body"><div class="comp__name">Streamlit</div><div class="comp__role">Demo UI</div><div class="comp__note">Lightweight UI for interactive inference and model demonstration.</div></div></article>
     <article class="comp"><div class="comp__logo"><img src="../imgs/github.svg" alt=""></div><div class="comp__body"><div class="comp__name">GitHub</div><div class="comp__role">Collaboration</div><div class="comp__note">Code, PRs, workflows.</div></div></article>
     <article class="comp"><div class="comp__logo"><img src="../imgs/kaggle.svg" alt=""></div><div class="comp__body"><div class="comp__name">Kaggle</div><div class="comp__role">Data source</div><div class="comp__note">AI vs real image dataset.</div></div></article>
     <article class="comp comp--end"><span>[ end of list ]</span></article>
@@ -847,13 +847,13 @@
     <ul class="mlops__list">
       <li data-n="01 —"><strong>Reproducibility</strong> — rebuild any past run from commit + DVC hash.</li>
       <li data-n="02 —"><strong>Traceability</strong> — MLflow links metrics ↔ params ↔ artifacts ↔ data.</li>
-      <li data-n="03 —"><strong>Automation</strong> — CI retrains · evaluates · registers on every merge.</li>
+      <li data-n="03 —"><strong>Automation</strong> — CI orchestrates training, evaluation, and optional model registration based on triggers.</li>
       <li data-n="04 —"><strong>Deployability</strong> — ONNX + Docker make the model portable.</li>
       <li data-n="05 —"><strong>Iterability</strong> — new data → re-version → retrain → re-register.</li>
     </ul>
     <div class="mlops__tag">
       <div class="mlops__tag__k">Every model =</div>
-      <div class="mlops__tag__v"><span class="paren">(</span>commit<span class="paren">·</span>data-version<span class="paren">·</span>run<span class="paren">)</span> — if any one is missing, the model is <em>not</em> reproducible.</div>
+      <div class="mlops__tag__v"><span class="paren">(</span>code version<span class="paren">·</span>data-version<span class="paren">·</span>experiment run<span class="paren">)</span> — if any one is missing, the model is <em>not</em> reproducible.</div>
     </div>
   </div>
   <div class="ftr">
