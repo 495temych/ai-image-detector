@@ -18,9 +18,12 @@ def get_git_commit() -> str:
 
 
 def get_dvc_hash(dvc_file: str = "data/processed.dvc") -> str:
-    with open(dvc_file) as f:
-        info = yaml.safe_load(f)
-    return info["outs"][0]["md5"]
+    try:
+        with open(dvc_file) as f:
+            info = yaml.safe_load(f)
+        return info["outs"][0]["md5"]
+    except (FileNotFoundError, KeyError, TypeError):
+        return "unknown"
 
 
 def parse_pipeline_output(
