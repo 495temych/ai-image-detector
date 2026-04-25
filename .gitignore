@@ -12,8 +12,6 @@ venv/
 .ipynb_checkpoints/
 
 # Data — tracked by DVC, not Git
-data/raw/
-data/processed/
 *.dvc/cache/
 /tmp/
 
