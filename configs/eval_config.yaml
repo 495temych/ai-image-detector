@@ -1,0 +1,20 @@
+model:
+  hf_model_id: "dima806/ai_vs_real_image_detection"
+  accuracy_threshold: 0.90
+
+data:
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  test_dir: "data/processed/test"
+  per_class: 500
+  split: [0.70, 0.15, 0.15]
+  random_seed: 42
+
+mlflow:
+  experiment_name: "ai-image-detector"
+  model_name: "ai-image-detector"
+
+api:
+  port: 8000
+  model_path: "model.onnx"
+  labels_path: "labels.json"

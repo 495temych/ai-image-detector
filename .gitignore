@@ -41,3 +41,13 @@ Thumbs.db
 
 # Git worktrees
 .worktrees/
+
+# Data (DVC-managed)
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Runtime artifacts
+mlflow_run_id.txt
+labels.json
