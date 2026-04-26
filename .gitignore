@@ -32,7 +32,6 @@ mlartifacts/
 .env
 *.env
 
-
 # OS
 .DS_Store
 Thumbs.db
@@ -43,3 +42,7 @@ Thumbs.db
 
 # Git worktrees
 .worktrees/
+
+# Runtime artifacts
+mlflow_run_id.txt
+labels.json
