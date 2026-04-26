@@ -103,7 +103,7 @@ def main() -> None:
     with open(args.config) as f:
         config = yaml.safe_load(f)
 
-    dagshub.init(repo_owner="marcosncosta1", repo_name="ai-image-detector", mlflow=True)
+    dagshub.init(repo_owner="495temych", repo_name="ai-image-detector", mlflow=True)
     mlflow.set_experiment(config["mlflow"]["experiment_name"])
 
     with mlflow.start_run() as run:

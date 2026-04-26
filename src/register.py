@@ -36,7 +36,7 @@ def main() -> None:
     with open(args.config) as f:
         config = yaml.safe_load(f)
 
-    dagshub.init(repo_owner="marcosncosta1", repo_name="ai-image-detector", mlflow=True)
+    dagshub.init(repo_owner="495temych", repo_name="ai-image-detector", mlflow=True)
     client = MlflowClient()
 
     run = client.get_run(args.run_id)
