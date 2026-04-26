@@ -5,7 +5,7 @@ on:
     branches: [main]
 
 env:
-  MLFLOW_TRACKING_URI: https://dagshub.com/${{ secrets.DAGSHUB_USERNAME }}/ai-image-detector.mlflow
+  DAGSHUB_USER_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
 
 jobs:
   evaluate:
@@ -26,7 +26,7 @@ jobs:
       - name: Configure DVC remote credentials
         run: |
           dvc remote modify dagshub --local auth basic
-          dvc remote modify dagshub --local user ${{ secrets.DAGSHUB_USERNAME }}
+          dvc remote modify dagshub --local user marcosncosta1
           dvc remote modify dagshub --local password ${{ secrets.DAGSHUB_TOKEN }}
 
       - name: Pull dataset from DagsHub
@@ -34,9 +34,6 @@ jobs:
 
       - name: Run evaluation
         id: run_eval
-        env:
-          MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
-          MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
           python src/evaluate.py --config configs/eval_config.yaml
           echo "run_id=$(cat mlflow_run_id.txt)" >> $GITHUB_OUTPUT
@@ -65,9 +62,6 @@ jobs:
           name: mlflow-run-id
 
       - name: Register and promote model
-        env:
-          MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
-          MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
           python src/register.py \
             --config configs/eval_config.yaml \
@@ -86,9 +80,6 @@ jobs:
       - run: pip install -r requirements.txt
 
       - name: Export ONNX model
-        env:
-          MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
-          MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
           python src/export_onnx.py \
             --config configs/eval_config.yaml \

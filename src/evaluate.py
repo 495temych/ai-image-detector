@@ -1,8 +1,8 @@
-import os
 import subprocess
 import argparse
 from pathlib import Path
 
+import dagshub
 import yaml
 import mlflow
 import mlflow.transformers
@@ -103,7 +103,7 @@ def main() -> None:
     with open(args.config) as f:
         config = yaml.safe_load(f)
 
-    mlflow.set_tracking_uri(os.environ["MLFLOW_TRACKING_URI"])
+    dagshub.init(repo_owner="marcosncosta1", repo_name="ai-image-detector", mlflow=True)
     mlflow.set_experiment(config["mlflow"]["experiment_name"])
 
     with mlflow.start_run() as run:

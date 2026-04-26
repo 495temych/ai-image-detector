@@ -1,7 +1,7 @@
-import os
 import argparse
 import sys
 
+import dagshub
 import yaml
 import mlflow
 from mlflow.tracking import MlflowClient
@@ -36,7 +36,7 @@ def main() -> None:
     with open(args.config) as f:
         config = yaml.safe_load(f)
 
-    mlflow.set_tracking_uri(os.environ["MLFLOW_TRACKING_URI"])
+    dagshub.init(repo_owner="marcosncosta1", repo_name="ai-image-detector", mlflow=True)
     client = MlflowClient()
 
     run = client.get_run(args.run_id)

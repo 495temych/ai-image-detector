@@ -1,8 +1,8 @@
-import os
 import argparse
 import json
 from pathlib import Path
 
+import dagshub
 import yaml
 import torch
 import mlflow
@@ -78,7 +78,7 @@ def main() -> None:
     with open(args.config) as f:
         config = yaml.safe_load(f)
 
-    mlflow.set_tracking_uri(os.environ["MLFLOW_TRACKING_URI"])
+    dagshub.init(repo_owner="marcosncosta1", repo_name="ai-image-detector", mlflow=True)
     export_onnx(
         model_name=config["mlflow"]["model_name"],
         output_dir=Path(args.output_dir),
