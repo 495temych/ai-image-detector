@@ -25,6 +25,10 @@ mlartifacts/
 *.pt
 *.pth
 *.onnx
+*.onnx.data
+
+# API sample images (pulled from S3, not committed)
+api/samples/
 
 # Environment
 .env
@@ -33,6 +37,7 @@ mlartifacts/
 
 # OS
 .DS_Store
+**/.DS_Store
 Thumbs.db
 
 # IDE

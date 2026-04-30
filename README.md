@@ -3,12 +3,7 @@
 Binary image classifier that detects whether an image is **AI-generated** or **real**.  
 Built as an end-to-end MLOps pipeline for the *Machine Learning and Data in Operation* course at ZHAW.
 
----
-
-## Project Goal
-
-Train and deploy a reproducible ML pipeline — not just a model.  
-Given an image → output `real` or `ai-generated` with a confidence score.
+**Model:** EfficientNet-B0 · Test acc: 0.8963 · AUC: 0.9616
 
 ---
 
@@ -27,7 +22,7 @@ Kaggle dataset
   GitHub Actions (CI: train → evaluate → register on every push)
      │
      ▼
-  FastAPI + Docker (REST endpoint)
+  FastAPI (REST endpoints)
      │
      ▼
   Streamlit (demo UI)
@@ -39,26 +34,22 @@ Kaggle dataset
 
 ```
 ai-image-detector/
-├── data/
-│   ├── raw/            # original Kaggle images (DVC-tracked, not in Git)
-│   └── processed/      # train/val/test splits (DVC-tracked)
-├── src/
-│   ├── data/           # dataset loading and preprocessing
-│   ├── models/         # model definition (EfficientNet-B0 backbone)
-│   ├── train.py        # training entrypoint
-│   ├── evaluate.py     # evaluation script
-│   └── predict.py      # single-image inference
 ├── api/
-│   ├── main.py         # FastAPI app
-│   └── Dockerfile
-├── app/
-│   └── app.py          # Streamlit demo
-├── configs/
-│   └── train_config.yaml  # all hyperparameters in one place
-├── notebooks/          # exploratory analysis
-├── .github/
-│   └── workflows/      # GitHub Actions CI pipeline
-├── env.yaml            # conda environment
+│   ├── main.py               # FastAPI app — 3 endpoints
+│   ├── model.py              # ONNX inference + GradCAM
+│   ├── schemas.py            # Pydantic response models
+│   ├── download_artifacts.py # pull model files from S3
+│   ├── export_onnx.py        # re-export ONNX from .pt weights
+│   ├── requirements.txt
+│   └── .env.example          # secrets template
+├── picture_samples/
+│   ├── fake/                 # 10 AI-generated test images
+│   └── real/                 # 10 real test images
+├── data/
+│   └── dataset.yaml
+├── src/                      # training code (coming)
+├── ui/                       # Streamlit UI (coming)
+├── env.yaml                  # conda environment
 └── README.md
 ```
 
@@ -69,43 +60,81 @@ ai-image-detector/
 ### 1. Clone and set up environment
 
 ```bash
-git clone https://github.com/<your-org>/ai-image-detector.git
+git clone https://dagshub.com/495temych/ai-image-detector.git
 cd ai-image-detector
 conda env create -f env.yaml
 conda activate mlops-img
 ```
 
-### 2. Pull dataset via DVC
+### 2. Configure secrets
 
 ```bash
-dvc pull
+cp api/.env.example api/.env
+# fill in DAGSHUB_KEY_ID and DAGSHUB_S3 with your DagsHub credentials
 ```
 
-> First time: configure your DVC remote (see `docs/dvc_setup.md`).
-
-### 3. Train
+### 3. Pull model artifacts from S3
 
 ```bash
-python src/train.py --config configs/train_config.yaml
+python -m api.download_artifacts
 ```
 
-All metrics and artifacts are logged to MLflow. Launch the UI with:
+This downloads `api/model.onnx` and `api/best_weights.pt` (~16 MB each).
+
+> **Alternative:** if you already have `best_weights.pt`, re-export ONNX locally:
+> ```bash
+> python -m api.export_onnx
+> ```
+
+### 4. Run the API
 
 ```bash
-mlflow ui
+uvicorn api.main:app --reload --port 8000
 ```
 
-### 4. Run the API locally
+Swagger UI → http://localhost:8000/docs
+
+---
+
+## API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/health` | Status check |
+| `POST` | `/predict` | Classify image → label + confidence |
+| `POST` | `/explain` | Classify + GradCAM heatmap |
+
+### Example requests
 
 ```bash
-cd api
-uvicorn main:app --reload
+# health check
+curl http://localhost:8000/health
+
+# predict
+curl -X POST http://localhost:8000/predict \
+  -F "file=@picture_samples/fake/0001.jpg"
+
+# explain (returns gradcam_base64 PNG)
+curl -X POST http://localhost:8000/explain \
+  -F "file=@picture_samples/real/0001.jpg"
 ```
 
-### 5. Run the Streamlit demo
+### Response shapes
 
-```bash
-streamlit run app/app.py
+```json
+// GET /health
+{ "status": "ok", "model": "efficientnet_v1" }
+
+// POST /predict
+{ "label": "fake", "confidence": 0.98, "model_version": "efficientnet_v1", "run_id": "2561d86a..." }
+
+// POST /explain
+{ "label": "real", "confidence": 0.91, "gradcam_base64": "<base64 PNG>" }
+```
+
+Render the GradCAM image in a browser:
+```html
+<img src="data:image/png;base64,{{ gradcam_base64 }}" />
 ```
 
 ---
@@ -114,20 +143,27 @@ streamlit run app/app.py
 
 | Tool | Role |
 |------|------|
-| DVC | Data versioning — tracks image dataset versions linked to each model run |
-| MLflow | Experiment tracking + model registry — logs metrics, promotes best model to Production |
-| GitHub Actions | CI — auto-triggers train → evaluate → register on push to `main` |
-| PyTorch | Model training — EfficientNet-B0 fine-tuned for binary classification |
-| FastAPI + Docker | REST API — serves the ONNX-exported model |
-| Streamlit | Demo UI — interactive image upload and prediction |
+| DVC | Data versioning |
+| MLflow | Experiment tracking + model registry |
+| GitHub Actions | CI pipeline |
+| PyTorch | EfficientNet-B0 fine-tuning |
+| ONNX Runtime | Fast inference in `/predict` |
+| FastAPI | REST API |
+| Streamlit | Demo UI |
 
 ---
 
 ## Dataset
 
 [AI Generated Images vs Real Images](https://www.kaggle.com/datasets/tristanzhang32/ai-generated-images-vs-real-images)  
-Kaggle · `tristanzhang32` · Binary: `real` / `fake`  
-Used for academic purposes only.
+Kaggle · `tristanzhang32` · Binary: `real` / `fake` · Used for academic purposes only.
+
+---
+
+## MLflow
+
+Tracking server: https://dagshub.com/495temych/ai-image-detector.mlflow  
+Champion model: `efficientnet-b0 @champion` · Run ID: `2561d86a3f22495e91b2cc7d3d1d3497`
 
 ---
 
