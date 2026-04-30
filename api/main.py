@@ -31,8 +31,8 @@ def predict(file: UploadFile = File(...)) -> PredictResponse:
     )
 
 
-@app.post("/explain", response_model=ExplainResponse)
-def explain(file: UploadFile = File(...)) -> ExplainResponse:
+@app.post("/predict-explain", response_model=ExplainResponse)
+def predict_explain(file: UploadFile = File(...)) -> ExplainResponse:
     image_bytes = _read_image(file)
     label, confidence, gradcam_b64 = explain_gradcam(image_bytes)
     return ExplainResponse(label=label, confidence=confidence, gradcam_base64=gradcam_b64)

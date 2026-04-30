@@ -102,7 +102,7 @@ Swagger UI → http://localhost:8000/docs
 |--------|------|-------------|
 | `GET` | `/health` | Status check |
 | `POST` | `/predict` | Classify image → label + confidence |
-| `POST` | `/explain` | Classify + GradCAM heatmap |
+| `POST` | `/predict-explain` | Classify + GradCAM heatmap |
 
 ### Example requests
 
@@ -114,8 +114,8 @@ curl http://localhost:8000/health
 curl -X POST http://localhost:8000/predict \
   -F "file=@picture_samples/fake/0001.jpg"
 
-# explain (returns gradcam_base64 PNG)
-curl -X POST http://localhost:8000/explain \
+# predict + explain (returns gradcam_base64 PNG)
+curl -X POST http://localhost:8000/predict-explain \
   -F "file=@picture_samples/real/0001.jpg"
 ```
 
@@ -128,7 +128,7 @@ curl -X POST http://localhost:8000/explain \
 // POST /predict
 { "label": "fake", "confidence": 0.98, "model_version": "efficientnet_v1", "run_id": "2561d86a..." }
 
-// POST /explain
+// POST /predict-explain
 { "label": "real", "confidence": 0.91, "gradcam_base64": "<base64 PNG>" }
 ```
 
