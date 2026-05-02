@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build a complete MLOps pipeline that evaluates a pre-trained AI/real image classifier, registers it in MLflow, exports it to ONNX, containerises it in Docker, and serves it via FastAPI + Streamlit.
+**Goal:** Build a complete MLOps pipeline that evaluates a fine-tuned EfficientNet classifier, registers it in MLflow, exports it to ONNX, containerises it in Docker, and serves it via FastAPI + Streamlit.
 
-**Architecture:** Pre-trained ViT model sourced from HuggingFace is evaluated on a DVC-versioned test subset, logged to MLflow on DagsHub, promoted to Production, exported to ONNX, and served from a Docker container. A Streamlit UI calls the FastAPI `/predict` endpoint. GitHub Actions automates the full eval→register→export→docker pipeline on every push to `main`.
+**Architecture:** EfficientNet is fine-tuned on Kaggle ([notebook](https://www.kaggle.com/code/marcosncosta/ai-vs-real-image-efficientnet-fine-tuning-86380e)), weights downloaded and versioned via DVC on DagsHub. CI evaluates those weights on a DVC-versioned test subset, logs metrics to MLflow on DagsHub, promotes to Production, exports to ONNX, and builds a Docker image. A Streamlit UI calls the FastAPI `/predict` endpoint. GitHub Actions automates the full evaluate→register→export→docker pipeline on every push to `main`.
 
-**Tech Stack:** Python 3.11, PyTorch, HuggingFace Transformers, ONNX/ONNXRuntime, MLflow, DVC, DagsHub, FastAPI, Uvicorn, Docker, Streamlit, GitHub Actions, scikit-learn, Pillow
+**Tech Stack:** Python 3.11, PyTorch, torchvision (EfficientNet), ONNX/ONNXRuntime, MLflow, DVC, DagsHub, FastAPI, Uvicorn, Docker, Streamlit, GitHub Actions, scikit-learn, Pillow
 
 ---
 
@@ -16,9 +16,9 @@
 |---|---|
 | `env.yaml` | Conda environment (local dev) |
 | `requirements.txt` | Pip dependencies (CI + Docker) |
-| `configs/eval_config.yaml` | All tuneable values: model ID, threshold, paths |
+| `configs/eval_config.yaml` | All tuneable values: model path, threshold, data paths |
 | `src/data/prepare_dataset.py` | Download Kaggle subset, create train/val/test splits |
-| `src/evaluate.py` | Load HF model, run on test split, log metrics + model to MLflow |
+| `src/evaluate.py` | Load EfficientNet `.pt`, run on test split, log metrics + model to MLflow |
 | `src/register.py` | Check threshold, promote model to Production in MLflow registry |
 | `src/export_onnx.py` | Load Production model from MLflow, export to ONNX + labels.json |
 | `tests/test_evaluate.py` | Unit tests for metric computation |
@@ -60,7 +60,6 @@ dependencies:
   - python=3.11
   - pip
   - pip:
-      - transformers==4.40.0
       - torch==2.3.0
       - torchvision==0.18.0
       - onnx==1.16.0
@@ -86,7 +85,6 @@ dependencies:
 Create `requirements.txt`:
 
 ```
-transformers==4.40.0
 torch==2.3.0
 torchvision==0.18.0
 onnx==1.16.0
@@ -113,8 +111,9 @@ Create `configs/eval_config.yaml`:
 
 ```yaml
 model:
-  hf_model_id: "dima806/ai_vs_real_image_detection"
-  accuracy_threshold: 0.90
+  model_path: "model/efficientnet.pt"   # path to fine-tuned weights (DVC-tracked)
+  accuracy_threshold: 0.80
+  input_size: 224
 
 data:
   raw_dir: "data/raw"
@@ -180,7 +179,7 @@ labels.json
 ```bash
 conda env create -f env.yaml
 conda activate mlops-img
-python -c "import transformers, mlflow, dvc; print('OK')"
+python -c "import torch, torchvision, mlflow, dvc; print('OK')"
 ```
 
 Expected output: `OK`
@@ -425,7 +424,7 @@ Create `tests/test_evaluate.py`:
 
 ```python
 import pytest
-from src.evaluate import compute_metrics, parse_pipeline_output
+from src.evaluate import compute_metrics
 
 
 def test_compute_metrics_perfect():
@@ -454,22 +453,6 @@ def test_compute_metrics_returns_float():
     assert isinstance(m["accuracy"], float)
     assert isinstance(m["f1"], float)
     assert isinstance(m["auc_roc"], float)
-
-
-def test_parse_pipeline_output_real(monkeypatch):
-    # Simulate HF pipeline output where REAL wins
-    raw = [{"label": "REAL", "score": 0.98}, {"label": "FAKE", "score": 0.02}]
-    label, score = parse_pipeline_output(raw, fake_label="FAKE")
-    assert label == 1  # fake=1 when top label is REAL → this image is NOT fake → 0
-    # Correct: top label is REAL → pred_label=0 (real), fake_score=0.02
-    # Re-check: label for "is fake" = 0 when REAL wins
-
-
-def test_parse_pipeline_output_fake():
-    raw = [{"label": "FAKE", "score": 0.91}, {"label": "REAL", "score": 0.09}]
-    label, score = parse_pipeline_output(raw, fake_label="FAKE")
-    assert label == 1
-    assert abs(score - 0.91) < 1e-6
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -491,9 +474,12 @@ import argparse
 from pathlib import Path
 
 import yaml
+import numpy as np
+import torch
+import torchvision.models as tv_models
+import torchvision.transforms as T
 import mlflow
-import mlflow.transformers
-from transformers import pipeline, AutoConfig
+from PIL import Image
 from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
 
 
@@ -510,24 +496,23 @@ def get_dvc_hash(dvc_file: str = "data/processed.dvc") -> str:
     return info["outs"][0]["md5"]
 
 
-def parse_pipeline_output(
-    result: list[dict], fake_label: str
-) -> tuple[int, float]:
-    """Convert HF pipeline output to (pred_label, fake_probability).
+def load_model(model_path: str) -> torch.nn.Module:
+    model = tv_models.efficientnet_b0(weights=None)
+    model.classifier[1] = torch.nn.Linear(
+        model.classifier[1].in_features, 2
+    )
+    model.load_state_dict(torch.load(model_path, map_location="cpu"))
+    model.eval()
+    return model
 
-    pred_label: 1 if FAKE, 0 if REAL
-    fake_probability: probability the image is fake (used for AUC-ROC)
-    """
-    top = result[0]
-    is_fake = top["label"].upper() == fake_label.upper()
-    if is_fake:
-        return 1, float(top["score"])
-    else:
-        fake_score = next(
-            (r["score"] for r in result if r["label"].upper() == fake_label.upper()),
-            1.0 - top["score"],
-        )
-        return 0, float(fake_score)
+
+def get_transform() -> T.Compose:
+    return T.Compose([
+        T.Resize(256),
+        T.CenterCrop(224),
+        T.ToTensor(),
+        T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ])
 
 
 def compute_metrics(
@@ -556,27 +541,26 @@ def load_test_images(test_dir: Path) -> tuple[list[str], list[int]]:
     return images, labels
 
 
-def run_evaluation(config: dict) -> tuple[dict, object]:
-    model_id = config["model"]["hf_model_id"]
+def run_evaluation(config: dict) -> dict:
+    model_path = config["model"]["model_path"]
     test_dir = Path(config["data"]["test_dir"])
 
-    model_config = AutoConfig.from_pretrained(model_id)
-    fake_label = next(
-        v for v in model_config.id2label.values() if v.upper() == "FAKE"
-    )
-
-    classifier = pipeline("image-classification", model=model_id)
+    model = load_model(model_path)
+    transform = get_transform()
     images, true_labels = load_test_images(test_dir)
 
     pred_labels, pred_scores = [], []
-    for img_path in images:
-        result = classifier(img_path)
-        label, score = parse_pipeline_output(result, fake_label=fake_label)
-        pred_labels.append(label)
-        pred_scores.append(score)
+    with torch.no_grad():
+        for img_path in images:
+            img = Image.open(img_path).convert("RGB")
+            tensor = transform(img).unsqueeze(0)
+            logits = model(tensor)[0]
+            probs = torch.softmax(logits, dim=0).numpy()
+            pred_idx = int(np.argmax(probs))
+            pred_labels.append(pred_idx)
+            pred_scores.append(float(probs[1]))  # prob of class 1 (fake)
 
-    metrics = compute_metrics(true_labels, pred_labels, pred_scores)
-    return metrics, classifier
+    return compute_metrics(true_labels, pred_labels, pred_scores)
 
 
 def main() -> None:
@@ -591,18 +575,15 @@ def main() -> None:
     mlflow.set_experiment(config["mlflow"]["experiment_name"])
 
     with mlflow.start_run() as run:
-        mlflow.log_param("model_id", config["model"]["hf_model_id"])
+        mlflow.log_param("model_path", config["model"]["model_path"])
         mlflow.log_param("threshold", config["model"]["accuracy_threshold"])
         mlflow.set_tag("git_commit", get_git_commit())
         mlflow.set_tag("dvc_hash", get_dvc_hash())
 
-        metrics, classifier = run_evaluation(config)
+        metrics = run_evaluation(config)
         mlflow.log_metrics(metrics)
 
-        mlflow.transformers.log_model(
-            transformers_model=classifier,
-            artifact_path="model",
-        )
+        mlflow.log_artifact(config["model"]["model_path"], artifact_path="model")
 
         print(f"Run ID: {run.info.run_id}")
         for k, v in metrics.items():
@@ -616,26 +597,7 @@ if __name__ == "__main__":
     main()
 ```
 
-- [ ] **Step 4: Fix the test for parse_pipeline_output**
-
-Update `tests/test_evaluate.py` — replace the two `test_parse_pipeline_output_*` tests with corrected assertions now that the implementation is clear:
-
-```python
-def test_parse_pipeline_output_real():
-    raw = [{"label": "REAL", "score": 0.98}, {"label": "FAKE", "score": 0.02}]
-    label, score = parse_pipeline_output(raw, fake_label="FAKE")
-    assert label == 0        # REAL → not fake
-    assert abs(score - 0.02) < 1e-6  # fake probability
-
-
-def test_parse_pipeline_output_fake():
-    raw = [{"label": "FAKE", "score": 0.91}, {"label": "REAL", "score": 0.09}]
-    label, score = parse_pipeline_output(raw, fake_label="FAKE")
-    assert label == 1        # FAKE → is fake
-    assert abs(score - 0.91) < 1e-6
-```
-
-- [ ] **Step 5: Run tests to verify they pass**
+- [ ] **Step 4: Run tests to verify they pass**
 
 ```bash
 pytest tests/test_evaluate.py -v
@@ -646,10 +608,26 @@ Expected output:
 tests/test_evaluate.py::test_compute_metrics_perfect PASSED
 tests/test_evaluate.py::test_compute_metrics_all_wrong PASSED
 tests/test_evaluate.py::test_compute_metrics_returns_float PASSED
-tests/test_evaluate.py::test_parse_pipeline_output_real PASSED
-tests/test_evaluate.py::test_parse_pipeline_output_fake PASSED
-5 passed
+3 passed
 ```
+
+- [ ] **Step 5: Place the trained EfficientNet weights**
+
+Download the `.pt` file from the Kaggle notebook output and place it at the path in config (default `model/efficientnet.pt`):
+
+```bash
+mkdir -p model
+# copy the .pt file from your Kaggle download here
+```
+
+> Track the weights with DVC so every run is pinned to a specific model version:
+>
+> ```bash
+> dvc add model/efficientnet.pt
+> git add model/efficientnet.pt.dvc .gitignore
+> git commit -m "feat: add DVC-tracked EfficientNet weights"
+> dvc push
+> ```
 
 - [ ] **Step 6: Run evaluation locally against the test split**
 
@@ -659,12 +637,12 @@ Ensure `MLFLOW_TRACKING_URI` is set, then:
 python src/evaluate.py --config configs/eval_config.yaml
 ```
 
-Expected output (values will vary slightly):
+Expected output (values will vary):
 ```
 Run ID: <some-uuid>
-  accuracy: 0.9467
-  f1: 0.9468
-  auc_roc: 0.9821
+  accuracy: 0.8600
+  f1: 0.8612
+  auc_roc: 0.9201
 ```
 
 Open `https://dagshub.com/<your-username>/ai-image-detector.mlflow` and confirm the run appears.
@@ -839,53 +817,52 @@ from pathlib import Path
 
 import yaml
 import torch
+import torchvision.models as tv_models
 import mlflow
-import mlflow.transformers
-from PIL import Image
-from transformers import AutoFeatureExtractor, AutoModelForImageClassification
 from mlflow.tracking import MlflowClient
 
 
-def export_onnx(
-    model_name: str,
-    output_dir: Path,
-    run_id: str | None = None,
-) -> tuple[Path, Path]:
-    """Download Production model from MLflow and export to ONNX.
+LABELS = {"0": "REAL", "1": "FAKE"}
+
+
+def _build_model(pt_path: Path) -> torch.nn.Module:
+    model = tv_models.efficientnet_b0(weights=None)
+    model.classifier[1] = torch.nn.Linear(
+        model.classifier[1].in_features, 2
+    )
+    model.load_state_dict(torch.load(str(pt_path), map_location="cpu"))
+    model.eval()
+    return model
+
+
+def export_onnx(model_name: str, output_dir: Path) -> tuple[Path, Path]:
+    """Download Production model artifact from MLflow, export to ONNX.
 
     Returns (onnx_path, labels_path).
     """
     client = MlflowClient()
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Resolve the run that owns the Production model
-    if run_id is None:
-        versions = client.get_latest_versions(model_name, stages=["Production"])
-        if not versions:
-            raise RuntimeError(f"No Production model found for '{model_name}'")
-        run_id = versions[0].run_id
+    versions = client.get_latest_versions(model_name, stages=["Production"])
+    if not versions:
+        raise RuntimeError(f"No Production model found for '{model_name}'")
+    run_id = versions[0].run_id
 
-    model_uri = f"models:/{model_name}/Production"
-    local_path = mlflow.artifacts.download_artifacts(model_uri)
+    local_dir = Path(mlflow.artifacts.download_artifacts(f"runs:/{run_id}/model"))
+    pt_files = list(local_dir.glob("*.pt"))
+    if not pt_files:
+        raise RuntimeError(f"No .pt file found in downloaded artifacts: {local_dir}")
 
-    feature_extractor = AutoFeatureExtractor.from_pretrained(local_path)
-    model = AutoModelForImageClassification.from_pretrained(local_path)
-    model.eval()
+    model = _build_model(pt_files[0])
 
-    # Save label mapping alongside the ONNX file
-    id2label = model.config.id2label  # e.g. {0: "FAKE", 1: "REAL"}
     labels_path = output_dir / "labels.json"
-    labels_path.write_text(json.dumps(id2label))
+    labels_path.write_text(json.dumps(LABELS))
 
-    # Create dummy input for tracing
-    dummy_image = Image.new("RGB", (224, 224))
-    inputs = feature_extractor(images=dummy_image, return_tensors="pt")
-    dummy_pixel_values = inputs["pixel_values"]
-
+    dummy = torch.zeros(1, 3, 224, 224)
     onnx_path = output_dir / "model.onnx"
     torch.onnx.export(
         model,
-        dummy_pixel_values,
+        dummy,
         str(onnx_path),
         input_names=["pixel_values"],
         output_names=["logits"],
@@ -896,7 +873,6 @@ def export_onnx(
         },
     )
 
-    # Upload ONNX as an additional artifact on the same MLflow run
     with mlflow.start_run(run_id=run_id):
         mlflow.log_artifact(str(onnx_path), artifact_path="onnx")
         mlflow.log_artifact(str(labels_path), artifact_path="onnx")
@@ -910,7 +886,6 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", default="configs/eval_config.yaml")
     parser.add_argument("--output-dir", default=".")
-    parser.add_argument("--run-id", default=None)
     args = parser.parse_args()
 
     with open(args.config) as f:
@@ -920,7 +895,6 @@ def main() -> None:
     export_onnx(
         model_name=config["mlflow"]["model_name"],
         output_dir=Path(args.output_dir),
-        run_id=args.run_id,
     )
 
 
@@ -985,7 +959,6 @@ Create `tests/test_api.py`:
 
 ```python
 import io
-import json
 import numpy as np
 import pytest
 from unittest import mock
@@ -1002,18 +975,12 @@ def make_jpeg_bytes(color: tuple = (100, 150, 200)) -> bytes:
 
 @pytest.fixture
 def client():
-    """Patch the _get_* lazy helpers so no real model files are needed."""
+    """Patch the lazy helpers so no real model files are needed."""
     mock_session = mock.MagicMock()
     mock_session.run.return_value = [np.array([[0.1, 0.9]])]  # logits: REAL (idx 1) wins
 
-    mock_fe = mock.MagicMock()
-    mock_fe.return_value = {
-        "pixel_values": np.zeros((1, 3, 224, 224), dtype=np.float32)
-    }
-
     with (
         mock.patch("api.main._get_session", return_value=mock_session),
-        mock.patch("api.main._get_feature_extractor", return_value=mock_fe),
         mock.patch("api.main._get_id2label", return_value={"0": "FAKE", "1": "REAL"}),
     ):
         from api.main import app
@@ -1071,14 +1038,16 @@ from fastapi.responses import JSONResponse
 
 MODEL_PATH = os.environ.get("MODEL_PATH", "model.onnx")
 LABELS_PATH = os.environ.get("LABELS_PATH", "labels.json")
-FEATURE_EXTRACTOR_NAME = "dima806/ai_vs_real_image_detection"
+
+# ImageNet normalisation constants matching EfficientNet training preprocessing
+_MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
+_STD = np.array([0.229, 0.224, 0.225], dtype=np.float32)
 
 app = FastAPI(title="AI Image Detector", version="1.0")
 
 # Lazy-loaded singletons — initialised on first request, not at import time.
 # This makes the module importable in tests without real model files.
 _session = None
-_feature_extractor = None
 _id2label = None
 
 
@@ -1090,21 +1059,20 @@ def _get_session():
     return _session
 
 
-def _get_feature_extractor():
-    global _feature_extractor
-    if _feature_extractor is None:
-        from transformers import AutoFeatureExtractor
-        _feature_extractor = AutoFeatureExtractor.from_pretrained(
-            FEATURE_EXTRACTOR_NAME
-        )
-    return _feature_extractor
-
-
 def _get_id2label() -> dict[str, str]:
     global _id2label
     if _id2label is None:
         _id2label = json.loads(Path(LABELS_PATH).read_text())
     return _id2label
+
+
+def _preprocess(image: Image.Image) -> np.ndarray:
+    image = image.convert("RGB").resize((256, 256))
+    left = (256 - 224) // 2
+    image = image.crop((left, left, left + 224, left + 224))
+    arr = np.array(image, dtype=np.float32) / 255.0
+    arr = (arr - _MEAN) / _STD
+    return arr.transpose(2, 0, 1)[np.newaxis]  # (1, 3, 224, 224)
 
 
 def _softmax(x: np.ndarray) -> np.ndarray:
@@ -1114,11 +1082,9 @@ def _softmax(x: np.ndarray) -> np.ndarray:
 
 def _predict(image: Image.Image) -> dict:
     session = _get_session()
-    feature_extractor = _get_feature_extractor()
     id2label = _get_id2label()
 
-    inputs = feature_extractor(images=image.convert("RGB"), return_tensors="np")
-    pixel_values = inputs["pixel_values"].astype(np.float32)
+    pixel_values = _preprocess(image)
     logits = session.run(None, {"pixel_values": pixel_values})[0][0]
     probs = _softmax(logits)
 
@@ -1167,7 +1133,6 @@ onnxruntime==1.18.0
 Pillow==10.3.0
 numpy==1.26.4
 python-multipart==0.0.9
-transformers==4.40.0
 ```
 
 - [ ] **Step 6: Create api/Dockerfile**
@@ -1399,8 +1364,10 @@ jobs:
           dvc remote modify dagshub --local user ${{ secrets.DAGSHUB_USERNAME }}
           dvc remote modify dagshub --local password ${{ secrets.DAGSHUB_TOKEN }}
 
-      - name: Pull dataset from DagsHub
-        run: dvc pull data/processed.dvc
+      - name: Pull dataset and model weights from DagsHub
+        run: |
+          dvc pull data/processed.dvc
+          dvc pull model/efficientnet.pt.dvc
 
       - name: Run evaluation
         id: run_eval
@@ -1615,9 +1582,10 @@ streamlit run app/app.py
 | Spec requirement | Task |
 |---|---|
 | Data versioning with DVC | Task 2, 3 |
+| Model weights versioning with DVC | Task 4 |
 | DagsHub remote (DVC + MLflow) | Task 2 |
 | GCS migration path documented | Spec §9 (no code needed) |
-| Evaluate pre-trained HF model | Task 4 |
+| Evaluate fine-tuned EfficientNet on test split | Task 4 |
 | Log metrics + model to MLflow | Task 4 |
 | Register + promote to Production | Task 5 |
 | ONNX export + artifact upload | Task 6 |

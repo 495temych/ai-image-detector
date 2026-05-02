@@ -40,19 +40,21 @@ well-scoped, well-documented problem — which lets us spend our time on the
 ## Pipeline Overview
 
 ```
- Kaggle dataset
+ Kaggle notebook (EfficientNet fine-tuning)   ← training happens here, externally
       │
+      │  download trained .pt weights
       ▼
-  DVC  ───────────────┐  (data versioning; each run pinned to a data hash)
+  DVC  ───────────────┐  (data + model versioning; each run pinned to a data hash)
       │               │
       ▼               │
-  PyTorch training ───┼──▶ MLflow  (metrics, params, artifacts, model registry)
+  Evaluate on         │
+  test split   ───────┼──▶ MLflow  (metrics, params, artifacts, model registry)
       │               │
       ▼               │
   ONNX export ────────┘
       │
       ▼
-  GitHub Actions (CI: train → evaluate → register on push to main)
+  GitHub Actions (CI: evaluate → register → export → docker, on push to main)
       │
       ▼
   FastAPI + Docker (REST endpoint serving the ONNX model)
@@ -61,6 +63,7 @@ well-scoped, well-documented problem — which lets us spend our time on the
   Streamlit (demo UI)
 ```
 
+Training runs once externally on Kaggle ([notebook](https://www.kaggle.com/code/marcosncosta/ai-vs-real-image-efficientnet-fine-tuning-86380e)).
 Every registered model is traceable back to **(git commit, DVC data version,
 MLflow run)** — that triple is what makes the pipeline reproducible.
 
@@ -72,10 +75,11 @@ MLflow run)** — that triple is what makes the pipeline reproducible.
 |----------|----------------|-----------|
 | Source code | Git | commit SHA |
 | Raw + processed images | DVC (external remote) | `.dvc` file committed to Git |
+| Trained EfficientNet weights (`.pt`) | DVC + MLflow artifact store | MLflow run ID |
 | Hyperparameters, metrics, plots | MLflow tracking server | MLflow run ID |
-| Trained weights (`.pt`) and exported `.onnx` | MLflow artifact store | MLflow run ID |
+| Exported `.onnx` model | MLflow artifact store | MLflow run ID |
 | Promoted models (Staging / Production) | MLflow model registry | model version |
-| CI runs (train → eval → register) | GitHub Actions | workflow run |
+| CI runs (evaluate → register → export → docker) | GitHub Actions | workflow run |
 
 ---
 
@@ -135,10 +139,17 @@ dvc pull
 mlflow server --host 127.0.0.1 --port 5000
 ```
 
-### 4. Train
+### 4. Download trained model weights
+
+The EfficientNet model is trained externally on Kaggle
+([notebook](https://www.kaggle.com/code/marcosncosta/ai-vs-real-image-efficientnet-fine-tuning-86380e)).
+Download the resulting `.pt` file and place it at the path specified in
+`configs/eval_config.yaml` (default: `model/efficientnet.pt`).
+
+Then run evaluation (logs metrics and the weights to MLflow):
 
 ```bash
-python src/train.py --config configs/train_config.yaml
+python src/evaluate.py --config configs/eval_config.yaml
 ```
 
 All metrics, params, and artifacts are logged to MLflow. Open the UI at
@@ -169,11 +180,11 @@ streamlit run app/app.py
 
 | Stage | Tool | Role |
 |-------|------|------|
-| Data & code versioning | DVC + Git | Pin each dataset snapshot to a commit |
+| Data & model versioning | DVC + Git | Pin dataset and model weights to a commit |
+| Training | PyTorch + Kaggle | Fine-tune EfficientNet on Kaggle GPU (external to CI) |
 | Experiment tracking | MLflow | Metrics, params, artifacts, model registry |
-| Training | PyTorch | Fine-tune EfficientNet-B0 for binary classification |
 | Portable inference | ONNX | Framework-agnostic exported model |
-| Automation / CI | GitHub Actions | Train → evaluate → register on push to `main` |
+| Automation / CI | GitHub Actions | Evaluate → register → export → docker on push to `main` |
 | Serving | FastAPI + Docker | Containerized REST endpoint |
 | Demo UI | Streamlit | Interactive image upload + prediction |
 

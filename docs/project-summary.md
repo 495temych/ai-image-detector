@@ -8,7 +8,7 @@
 
 1. **Dataset** — We download a subset (~500 images/class) of the [Kaggle AI vs. Real dataset](https://www.kaggle.com/datasets/tristanzhang32/ai-generated-images-vs-real-images). Instead of storing images in Git, we use **DVC** to version them — every run is pinned to an exact dataset snapshot stored on **DagsHub**.
 
-2. **Model** — We use a pre-trained ViT model from HuggingFace (`dima806/ai_vs_real_image_detection`, Apache 2.0) instead of training from scratch. The 52GB dataset makes from-scratch training impractical for a course project, and the focus is the pipeline anyway.
+2. **Model** — We fine-tune **EfficientNet** (torchvision) on the Kaggle dataset using a [Kaggle GPU notebook](https://www.kaggle.com/code/marcosncosta/ai-vs-real-image-efficientnet-fine-tuning-86380e). EfficientNet was chosen because it was pre-trained on larger images and scales well with image resolution, giving better feature extraction for high-resolution photographs. The trained `.pt` weights are downloaded from Kaggle and versioned via DVC.
 
 3. **Evaluation** — A script runs the model against our test split, computes accuracy / F1 / AUC-ROC, and logs everything — metrics, parameters, git commit SHA, and DVC data hash — to **MLflow** hosted on DagsHub. This makes every run fully traceable.
 
@@ -28,12 +28,12 @@
 
 | Tool | Role |
 |---|---|
-| **DVC** | Version the dataset — every model links back to the exact data it was evaluated on |
+| **DVC** | Version the dataset and model weights — every run links back to the exact data and model it used |
 | **DagsHub** | Hosts the DVC remote storage and the MLflow tracking server (free) |
 | **MLflow** | Tracks every evaluation run (metrics, params, artifacts) + model registry |
-| **HuggingFace** | Source of the pre-trained model (no GPU training needed) |
+| **PyTorch + Kaggle** | Fine-tune EfficientNet on Kaggle GPU; weights downloaded and versioned via DVC |
 | **ONNX** | Framework-agnostic model export for fast, portable inference |
-| **GitHub Actions** | Automates the full pipeline on every push |
+| **GitHub Actions** | Automates the evaluate → register → export → docker pipeline on every push |
 | **FastAPI + Docker** | Containerised REST API serving the ONNX model |
 | **Streamlit** | Interactive demo UI for the live presentation |
 
@@ -67,10 +67,11 @@ We upload 6–8 pre-selected images (clearly real, clearly AI, a few ambiguous) 
 
 | Decision | Choice | Reason |
 |---|---|---|
-| No training from scratch | Use HuggingFace pre-trained model | Dataset is 52GB; pipeline is the goal, not accuracy |
+| Model architecture | EfficientNet (fine-tuned) | Pre-trained on larger images; better feature extraction for high-resolution photos than ViT-224 |
+| Training environment | Kaggle GPU notebook | Free GPU, no local setup; training happens once and weights are versioned via DVC |
 | Dataset subset | ~500 images/class (~100MB) | Enough for meaningful metrics; fits DagsHub free tier |
 | DVC remote | DagsHub (migrate to GCS when credits arrive) | Free, zero infra, MLflow in same place |
-| CI training step | Replaced by eval + register | Avoids GPU cost and CI timeout; still shows full pipeline |
+| CI training step | Replaced by eval + register | Training is done externally on Kaggle; CI only evaluates, registers, exports, and packages |
 | Demo approach | Streamlit → FastAPI → ONNX | Shows serving layer live; MLflow/DVC shown on slides |
 
 ---

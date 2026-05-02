@@ -15,19 +15,23 @@ Build a complete, reproducible **MLOps pipeline** that classifies an image as `r
 ## 2. Architecture Overview
 
 ```
+[TRAINING LAYER]  (external — Kaggle GPU notebook)
+  Kaggle dataset → EfficientNet fine-tuning → trained .pt weights
+  → downloaded locally → versioned with DVC → pushed to DagsHub
+
 [DATA LAYER]
   Kaggle dataset (subset ~500/class) → train/val/test splits
   → tracked with DVC → pushed to DagsHub remote
 
 [MODEL LAYER]
-  HuggingFace model pulled → evaluated on DVC test split
+  DVC pull model weights → evaluate on test split
   → metrics + model logged to MLflow (DagsHub)
   → if metrics pass threshold → promoted to Production in MLflow registry
   → exported to ONNX
 
 [CI LAYER]  (triggered on push to main)
   GitHub Actions:
-    job 1: evaluate  → log to MLflow
+    job 1: evaluate  → load EfficientNet weights, run on test split, log to MLflow
     job 2: register  → promote if threshold met
     job 3: export    → ONNX artifact
     job 4: docker    → build image → push to GHCR
@@ -44,27 +48,26 @@ Build a complete, reproducible **MLOps pipeline** that classifies an image as `r
 | Stage | Tool | Role |
 |---|---|---|
 | Source control | Git + GitHub | Every model links back to its commit SHA |
-| Data versioning | DVC | Pins each dataset snapshot to a commit hash |
+| Data + model versioning | DVC | Pins each dataset snapshot and model weights to a commit hash |
 | DVC + MLflow remote | DagsHub | Hosts DVC remote storage and MLflow tracking server (free tier) |
-| Model source | HuggingFace (`dima806/ai_vs_real_image_detection`) | Pre-trained ViT-base, Apache 2.0 |
+| Model training | PyTorch + Kaggle GPU | Fine-tune EfficientNet on Kaggle ([notebook](https://www.kaggle.com/code/marcosncosta/ai-vs-real-image-efficientnet-fine-tuning-86380e)); weights versioned via DVC |
 | Experiment tracking | MLflow | Metrics, params, artifacts, model registry |
 | Portable inference | ONNX | Framework-agnostic exported model |
-| CI/CD | GitHub Actions | Eval → register → export → Docker build → GHCR push |
+| CI/CD | GitHub Actions | Evaluate → register → export → Docker build → GHCR push |
 | Serving | FastAPI + Docker | Containerised REST endpoint (`POST /predict`) |
 | Demo UI | Streamlit | Calls FastAPI `/predict`, displays label + confidence |
 
-Minimum tool count: **7 distinct tools** (DVC, MLflow, HuggingFace, GitHub Actions, ONNX, FastAPI/Docker, Streamlit). Meets the ≥3 requirement with significant margin.
+Minimum tool count: **7 distinct tools** (DVC, MLflow, PyTorch/Kaggle, GitHub Actions, ONNX, FastAPI/Docker, Streamlit). Meets the ≥3 requirement with significant margin.
 
 ---
 
 ## 4. Model
 
-- **Source:** `dima806/ai_vs_real_image_detection` on HuggingFace
-- **Architecture:** ViT-base-patch16-224 fine-tuned for binary classification
-- **License:** Apache 2.0
-- **Baseline metrics (reported):** accuracy 98.25%, F1 0.9826
-- **Why not training from scratch:** The dataset is 52GB; training an EfficientNet from scratch would be computationally expensive and is not the project goal. Using a pre-trained model and focusing CI on evaluation, registration, and deployment is a realistic MLOps pattern.
-- **Note on concept drift:** The model was trained on an older dataset. This is an intentional talking point — the pipeline is designed so that when a better model becomes available, swapping it requires only a config change, not a pipeline rewrite.
+- **Architecture:** EfficientNet (torchvision), fine-tuned for binary classification (`real` / `fake`)
+- **Training:** Kaggle GPU notebook — [ai-vs-real-image-efficientnet-fine-tuning](https://www.kaggle.com/code/marcosncosta/ai-vs-real-image-efficientnet-fine-tuning-86380e)
+- **Why EfficientNet:** EfficientNet was pre-trained on larger images (compared to ViT-224 patch models), which gives richer spatial feature extraction for high-resolution photographs — exactly the domain of AI-vs-real detection.
+- **Training approach:** We fine-tune the pre-trained backbone on a subset of the Kaggle dataset using Kaggle's free GPU. Training happens once (or when the team wants to retrain); weights are downloaded as a `.pt` file, versioned with DVC, and pushed to DagsHub.
+- **Swap story:** If a better model becomes available, only the `.pt` file and config path need to change — the evaluation, registration, export, and serving pipeline remains untouched. This is an intentional talking point about pipeline robustness.
 
 ---
 
@@ -133,10 +136,10 @@ evaluate → register → export → docker
 ```
 
 #### Job 1: evaluate
-- `dvc pull` — fetch pinned dataset
-- Load model from HuggingFace
+- `dvc pull` — fetch pinned dataset and model weights
+- Load fine-tuned EfficientNet `.pt` from the DVC-tracked path
 - Run inference on `data/processed/test/`
-- Log to MLflow: accuracy, F1, AUC-ROC, DVC data hash, git commit SHA
+- Log to MLflow: accuracy, F1, AUC-ROC, DVC data hash, git commit SHA, model path
 - MLflow tracking URI: `https://dagshub.com/<username>/ai-image-detector.mlflow`
 
 #### Job 2: register
