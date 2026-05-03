@@ -46,6 +46,9 @@ Kaggle dataset
      │
      ▼
   Node.js + Express (web UI on port 3000)
+     │
+     ▼
+  Docker Compose (packages API + UI — one command to run)
 ```
 
 ---
@@ -57,14 +60,18 @@ ai-image-detector/
 ├── api/
 │   ├── main.py               # FastAPI app — /health, /predict, /predict-explain
 │   ├── model.py              # ONNX inference + PyTorch GradCAM
+│   ├── model.onnx            # exported model for fast inference
+│   ├── best_weights.pt       # PyTorch weights for GradCAM
 │   ├── schemas.py            # Pydantic response models
-│   ├── download_artifacts.py # pull model files from DagsHub S3
+│   ├── download_artifacts.py # pull model files from DagsHub S3 (dev use)
 │   ├── export_onnx.py        # re-export ONNX from .pt weights
 │   ├── requirements.txt
-│   └── .env.example          # secrets template
+│   ├── Dockerfile
+│   └── .env.example          # secrets template (only needed for re-downloading artifacts)
 ├── ui/
 │   ├── server.js             # Express server — proxies /api/* → FastAPI, handles feedback
 │   ├── package.json
+│   ├── Dockerfile
 │   ├── public/
 │   │   ├── index.html        # single-page app
 │   │   ├── script.js         # upload, classify, GradCAM view modes, feedback
@@ -78,7 +85,9 @@ ai-image-detector/
 ├── imgs/                     # screenshots and assets
 ├── data/
 │   └── dataset.yaml
-├── env.yaml                  # conda environment
+├── docker-compose.yml        # spins up API + UI with a single command
+├── .dockerignore
+├── env.yaml                  # conda environment (local dev)
 └── README.md
 ```
 
@@ -86,36 +95,34 @@ ai-image-detector/
 
 ## Quickstart
 
-### 1. Clone and set up environment
+### Option A — Docker (recommended, no setup required)
+
+> Requires [Docker Desktop](https://www.docker.com/products/docker-desktop/) to be running.
 
 ```bash
-git clone https://dagshub.com/495temych/ai-image-detector.git
+git clone https://github.com/495temych/ai-image-detector.git
+cd ai-image-detector
+docker compose up --build
+```
+
+Open **http://localhost:3000**
+
+That's it. The model weights are bundled in the image — no credentials or `.env` file needed.
+
+---
+
+### Option B — Local (Python + Node.js)
+
+#### 1. Clone and set up environment
+
+```bash
+git clone https://github.com/495temych/ai-image-detector.git
 cd ai-image-detector
 conda env create -f env.yaml
 conda activate mlops-img
 ```
 
-### 2. Configure secrets
-
-```bash
-cp api/.env.example api/.env
-# fill in DAGSHUB_KEY_ID and DAGSHUB_S3 with your DagsHub credentials
-```
-
-### 3. Pull model artifacts from S3
-
-```bash
-python -m api.download_artifacts
-```
-
-This downloads `api/model.onnx` and `api/best_weights.pt` (~16 MB each).
-
-> **Alternative:** if you already have `best_weights.pt`, re-export ONNX locally:
-> ```bash
-> python -m api.export_onnx
-> ```
-
-### 4. Start the FastAPI backend
+#### 2. Start the FastAPI backend
 
 ```bash
 uvicorn api.main:app --port 8000
@@ -123,7 +130,7 @@ uvicorn api.main:app --port 8000
 
 Swagger UI → http://localhost:8000/docs
 
-### 5. Start the web UI
+#### 3. Start the web UI
 
 In a second terminal:
 
@@ -201,6 +208,7 @@ The GradCAM PNG is a 224×224 blend of the original image (50%) and a JET-colorm
 | ONNX Runtime | Fast inference in `/predict` |
 | FastAPI | REST API |
 | Node.js + Express | Web UI server |
+| Docker + Compose | Containerised deployment — single-command demo |
 | DVC | Data versioning |
 | MLflow | Experiment tracking + model registry |
 | GitHub Actions | CI pipeline |
