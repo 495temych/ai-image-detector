@@ -7,7 +7,7 @@ const fs = require('fs');
 
 const app = express();
 const PORT = 3000;
-const API_URL = 'http://localhost:8000';
+const API_URL = process.env.API_URL || 'http://localhost:8000';
 
 const FEEDBACK_DIR = path.join(__dirname, 'feedback');
 const IMAGES_DIR   = path.join(FEEDBACK_DIR, 'images');
