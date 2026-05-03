@@ -6,8 +6,6 @@ services:
       dockerfile: api/Dockerfile
     ports:
       - "8000:8000"
-    env_file:
-      - api/.env          # supplies DAGSHUB_KEY_ID, DAGSHUB_S3, S3_* for artifact download
 
   ui:
     build:

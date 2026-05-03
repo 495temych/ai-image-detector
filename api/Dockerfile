@@ -12,9 +12,9 @@ WORKDIR /app
 COPY api/requirements.txt api/requirements.txt
 RUN pip install --no-cache-dir -r api/requirements.txt
 
+# Copy source + model weights (weights are baked in — no credentials needed at runtime)
 COPY api/ api/
 
 EXPOSE 8000
 
-# download_artifacts.py skips files that already exist, so this is safe to run every start
-CMD ["sh", "-c", "python -m api.download_artifacts && uvicorn api.main:app --host 0.0.0.0 --port 8000"]
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]

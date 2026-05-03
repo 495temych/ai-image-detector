@@ -5,12 +5,6 @@ __pycache__/
 venv/
 *.egg-info/
 
-# Model artifacts — downloaded at container startup, never baked into the image
-*.pt
-*.pth
-*.onnx
-*.onnx.data
-
 # Secrets
 .env
 api/.env
