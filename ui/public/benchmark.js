@@ -14,7 +14,7 @@ const sumModelAcc   = document.getElementById('sum-model-acc');
 const sumBothFooled = document.getElementById('sum-both-fooled');
 const sumYouBeat    = document.getElementById('sum-you-beat');
 const sumVerdict    = document.getElementById('sum-verdict');
-const bmImageGrid   = document.getElementById('bm-image-grid');
+const bmResults     = document.getElementById('bm-results');
 const apiDot        = document.getElementById('api-dot');
 const apiStatus     = document.getElementById('api-status');
 
@@ -121,7 +121,7 @@ async function submitAnswers() {
   sumYouBeat.textContent    = '…';
   sumVerdict.textContent    = '…';
   sumVerdict.className      = '';
-  bmImageGrid.innerHTML     = '<p class="bm-loading">Crunching results…</p>';
+  bmResults.innerHTML       = '<p class="bm-loading">Crunching results…</p>';
 
   try {
     const r = await fetch('/challenge/submit', {
@@ -132,18 +132,39 @@ async function submitAnswers() {
     if (!r.ok) throw new Error(`Server error ${r.status}`);
     renderReveal(await r.json());
   } catch (err) {
-    bmImageGrid.innerHTML = `<p class="bm-error">Error loading results: ${err.message}</p>`;
+    bmResults.innerHTML = `<p class="bm-error">Error loading results: ${err.message}</p>`;
   }
 }
 
+// ── Reveal helpers ──
+function computeSummary(results) {
+  const yourAcc  = results.filter(r => r.human_correct).length / results.length;
+  const modelAcc = results.filter(r => r.model_correct).length / results.length;
+  // image_num is 1-based from the new server; fall back to index+1 for old server
+  const num = r => r.image_num ?? (r.id + 1);
+  return {
+    your_accuracy:  yourAcc,
+    model_accuracy: modelAcc,
+    both_fooled:    results.filter(r => !r.human_correct && !r.model_correct).map(num),
+    you_beat_model: results.filter(r =>  r.human_correct && !r.model_correct).map(num),
+    verdict: yourAcc > modelAcc ? 'You win this round'
+           : yourAcc < modelAcc ? 'Model wins this round'
+           : 'Tie',
+  };
+}
+
 // ── Reveal ──
-function renderReveal({ results, summary }) {
-  const pct = v => `${Math.round(v * 100)}%`;
+function renderReveal(data) {
+  const { results } = data;
+  // Use server-computed summary if present; compute client-side otherwise
+  const summary = data.summary ?? computeSummary(results);
+
+  const pct       = v => `${Math.round(v * 100)}%`;
   const imageList = nums => nums.length === 0
     ? 'None'
     : `${nums.length} (${nums.map(n => `Image ${n}`).join(', ')})`;
 
-  // Summary table
+  // ── Summary table ──
   sumYourAcc.textContent    = pct(summary.your_accuracy);
   sumModelAcc.textContent   = pct(summary.model_accuracy);
   sumBothFooled.textContent = imageList(summary.both_fooled);
@@ -152,42 +173,56 @@ function renderReveal({ results, summary }) {
     : `${summary.you_beat_model.length} image${summary.you_beat_model.length > 1 ? 's' : ''} (${summary.you_beat_model.map(n => `Image ${n}`).join(', ')})`;
 
   sumVerdict.textContent = summary.verdict;
-  sumVerdict.className   = summary.verdict.startsWith('You win')   ? 'verdict-win'
+  sumVerdict.className   = summary.verdict.startsWith('You win')    ? 'verdict-win'
                          : summary.verdict.startsWith('Model wins') ? 'verdict-loss'
                          : 'verdict-tie';
 
-  // Per-image grid
-  bmImageGrid.innerHTML = '';
+  // ── Per-image cards (full GradCAM view) ──
+  bmResults.innerHTML = '';
 
   const tick  = `<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3 3L11 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   const cross = `<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 2l9 9M11 2L2 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
-  const label = l => l === 'real' ? 'Real' : 'AI';
+  const labelText = l => l === 'real' ? 'Real' : 'AI-generated';
 
   results.forEach((item, i) => {
-    const status = item.human_correct && item.model_correct  ? 'both-right'
-      :           !item.human_correct && item.model_correct  ? 'model-only'
-      :            item.human_correct && !item.model_correct ? 'human-only'
-      :                                                        'both-wrong';
+    const imageNum = item.image_num ?? (i + 1);
+    const status   = item.human_correct && item.model_correct  ? 'both-right'
+      :             !item.human_correct && item.model_correct  ? 'model-only'
+      :              item.human_correct && !item.model_correct ? 'human-only'
+      :                                                          'both-wrong';
 
-    const row = document.createElement('div');
-    row.className = `bm-grid-row bm-grid-row--${status}`;
-    row.style.animationDelay = `${i * 0.04}s`;
-    row.innerHTML = `
-      <div class="bm-grid-row__thumbs">
-        <img class="bm-grid-thumb" src="${item.src}" alt="Image ${item.image_num}">
+    const statusLabel = {
+      'both-right': 'Both right',
+      'model-only': 'Model only',
+      'human-only': 'You only',
+      'both-wrong': 'Both wrong',
+    }[status];
+
+    const card = document.createElement('div');
+    card.className = `bm-card bm-card--${status}`;
+    card.style.animationDelay = `${i * 0.04}s`;
+    card.innerHTML = `
+      <div class="bm-card__images">
+        <img class="bm-card__thumb"   src="${item.src}" alt="Image ${imageNum}">
         ${item.gradcam_b64
-          ? `<img class="bm-grid-thumb bm-grid-thumb--gradcam" src="data:image/png;base64,${item.gradcam_b64}" alt="GradCAM">`
-          : '<div class="bm-grid-thumb bm-grid-thumb--empty"></div>'}
+          ? `<img class="bm-card__gradcam" src="data:image/png;base64,${item.gradcam_b64}" alt="GradCAM">`
+          : ''}
       </div>
-      <div class="bm-grid-row__label">Image ${item.image_num}</div>
-      <div class="bm-grid-row__truth">True: <strong>${label(item.true_label)}</strong></div>
-      <div class="bm-grid-row__you ${item.human_correct ? 'correct' : 'wrong'}">
-        You: ${label(item.user_answer)} ${item.human_correct ? tick : cross}
-      </div>
-      <div class="bm-grid-row__model ${item.model_correct ? 'correct' : 'wrong'}">
-        Model: ${label(item.model_label)} ${item.model_correct ? tick : cross}
-        <span class="bm-conf">${Math.round(item.model_confidence * 100)}%</span>
+      <div class="bm-card__info">
+        <div class="bm-card__num">Image ${imageNum}</div>
+        <div class="bm-card__truth">Ground truth: <strong>${labelText(item.true_label)}</strong></div>
+        <div class="bm-card__row ${item.human_correct ? 'correct' : 'wrong'}">
+          ${item.human_correct ? tick : cross}
+          <span>You: ${labelText(item.user_answer)}</span>
+        </div>
+        <div class="bm-card__row ${item.model_correct ? 'correct' : 'wrong'}">
+          ${item.model_correct ? tick : cross}
+          <span>Model: ${labelText(item.model_label)}
+            <span class="bm-conf">${Math.round(item.model_confidence * 100)}%</span>
+          </span>
+        </div>
+        <div class="bm-card__status bm-card__status--${status}">${statusLabel}</div>
       </div>`;
-    bmImageGrid.appendChild(row);
+    bmResults.appendChild(card);
   });
 }

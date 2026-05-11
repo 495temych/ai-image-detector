@@ -162,20 +162,24 @@ app.post('/challenge/submit', express.json(), (req, res) => {
            : 'Tie',
   };
 
-  // Log session result for later analysis
-  const logEntry = {
-    session_id,
-    timestamp: new Date().toISOString(),
-    summary,
-    results: results.map(({ id, image_num, true_label, model_label, model_confidence, user_answer, human_correct, model_correct }) =>
-      ({ id, image_num, true_label, model_label, model_confidence, user_answer, human_correct, model_correct })
-    ),
-  };
-  fs.appendFileSync(
-    path.join(FEEDBACK_DIR, 'sessions.jsonl'),
-    JSON.stringify(logEntry) + '\n',
-    'utf8'
-  );
+  // Log session result for later analysis (best-effort — never block the response)
+  try {
+    const logEntry = {
+      session_id,
+      timestamp: new Date().toISOString(),
+      summary,
+      results: results.map(({ id, image_num, true_label, model_label, model_confidence, user_answer, human_correct, model_correct }) =>
+        ({ id, image_num, true_label, model_label, model_confidence, user_answer, human_correct, model_correct })
+      ),
+    };
+    fs.appendFileSync(
+      path.join(FEEDBACK_DIR, 'sessions.jsonl'),
+      JSON.stringify(logEntry) + '\n',
+      'utf8'
+    );
+  } catch (logErr) {
+    console.warn('Session log write failed (non-fatal):', logErr.message);
+  }
 
   sessions.delete(session_id); // single-use
   res.json({ session_id, results, summary });
