@@ -25,6 +25,10 @@
     </span>
     <span class="brand-name">AI Image Detector</span>
   </div>
+  <nav class="tab-nav" aria-label="Section">
+    <a class="tab-link tab-link--active" href="index.html">Detector</a>
+    <a class="tab-link" href="benchmark.html">Challenge</a>
+  </nav>
   <div class="masthead__right">
     <div class="api-pill" id="api-pill">
       <span class="dot" id="api-dot"></span>
@@ -63,11 +67,9 @@
         </div>
         <div class="drop-zone__preview" id="dz-preview" hidden>
           <img id="preview-img" alt="Uploaded image">
-          <!-- GradCAM overlay — opacity controlled by blend slider -->
           <div class="img-overlay" id="img-overlay">
             <img id="gradcam-img" alt="GradCAM heatmap">
           </div>
-          <!-- Split/compare mode: draggable vertical divider -->
           <div class="split-handle" id="split-handle" hidden>
             <div class="split-line"></div>
             <button class="split-knob" id="split-knob" aria-label="Drag to compare">
@@ -78,7 +80,6 @@
             <div class="split-label split-label--left">Original</div>
             <div class="split-label split-label--right">GradCAM</div>
           </div>
-          <!-- View mode controls (shown once GradCAM is available) -->
           <div class="img-controls" id="img-controls" hidden>
             <button class="img-btn active" id="btn-original">Original</button>
             <button class="img-btn" id="btn-blend">Blend</button>
@@ -88,7 +89,6 @@
         <input type="file" id="file-input" accept="image/*" hidden>
       </div>
 
-      <!-- GradCAM tools: blend slider + JET color legend -->
       <div class="gradcam-tools" id="gradcam-tools" hidden>
         <div class="blend-row" id="blend-row">
           <span class="tool-label">Blend</span>
@@ -124,7 +124,6 @@
       </div>
 
       <div class="result-card" id="result-card" hidden>
-
         <div class="verdict" id="verdict">
           <div class="verdict__icon" id="verdict-icon" aria-hidden="true">
             <svg class="verdict-svg verdict-svg--real" width="22" height="22" viewBox="0 0 22 22" fill="none">
@@ -162,7 +161,6 @@
           </div>
         </div>
 
-        <!-- GradCAM attention thumbnail -->
         <div class="gradcam-focus" id="gradcam-focus" hidden>
           <div class="gradcam-focus__header">
             <span class="gradcam-focus__title">Model attention</span>
@@ -210,13 +208,11 @@
               </button>
             </div>
           </div>
-
           <div class="feedback-done" id="feedback-done" hidden>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8l4 4L14 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
             <span id="feedback-done-text">Thanks — feedback saved.</span>
           </div>
         </div>
-
       </div>
 
       <div class="analyzing-state" id="analyzing-state" hidden>
@@ -226,7 +222,6 @@
         <p class="analyzing-text">Analyzing image…</p>
         <p class="analyzing-sub">Running EfficientNet-B0 + GradCAM</p>
       </div>
-
     </div>
   </div>
 

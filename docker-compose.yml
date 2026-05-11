@@ -14,7 +14,8 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - API_URL=http://api:8000   # reaches the api service by its compose service name
+      - API_URL=http://api:8000          # reaches the api service by its compose service name
+      - SAMPLES_DIR=/app/picture_samples # challenge image pool (copied into image at build time)
     depends_on:
       - api
     volumes:
