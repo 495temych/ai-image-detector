@@ -1,20 +1,22 @@
 // ── Elements ──
-const screenStart  = document.getElementById('screen-start');
-const screenPlay   = document.getElementById('screen-play');
-const screenReveal = document.getElementById('screen-reveal');
-const btnStart     = document.getElementById('btn-start');
-const btnRestart   = document.getElementById('btn-restart');
-const btnReal      = document.getElementById('btn-real');
-const btnFake      = document.getElementById('btn-fake');
-const gameImg      = document.getElementById('game-img');
-const progressFill = document.getElementById('progress-fill');
-const progressLabel= document.getElementById('progress-label');
-const scoreHuman   = document.getElementById('score-human');
-const scoreModel   = document.getElementById('score-model');
-const bmVerdict    = document.getElementById('bm-verdict');
-const bmResults    = document.getElementById('bm-results');
-const apiDot       = document.getElementById('api-dot');
-const apiStatus    = document.getElementById('api-status');
+const screenStart   = document.getElementById('screen-start');
+const screenPlay    = document.getElementById('screen-play');
+const screenReveal  = document.getElementById('screen-reveal');
+const btnStart      = document.getElementById('btn-start');
+const btnRestart    = document.getElementById('btn-restart');
+const btnReal       = document.getElementById('btn-real');
+const btnFake       = document.getElementById('btn-fake');
+const gameImg       = document.getElementById('game-img');
+const progressFill  = document.getElementById('progress-fill');
+const progressLabel = document.getElementById('progress-label');
+const sumYourAcc    = document.getElementById('sum-your-acc');
+const sumModelAcc   = document.getElementById('sum-model-acc');
+const sumBothFooled = document.getElementById('sum-both-fooled');
+const sumYouBeat    = document.getElementById('sum-you-beat');
+const sumVerdict    = document.getElementById('sum-verdict');
+const bmImageGrid   = document.getElementById('bm-image-grid');
+const apiDot        = document.getElementById('api-dot');
+const apiStatus     = document.getElementById('api-status');
 
 // ── State ──
 let session    = null;   // { session_id, images: [{id, src}] }
@@ -113,10 +115,13 @@ btnFake.addEventListener('click', () => recordAnswer('fake'));
 // ── Submit ──
 async function submitAnswers() {
   showScreen('screen-reveal');
-  scoreHuman.textContent = '…';
-  scoreModel.textContent = '…';
-  bmVerdict.textContent  = '';
-  bmResults.innerHTML    = '<p class="bm-loading">Crunching results…</p>';
+  sumYourAcc.textContent    = '…';
+  sumModelAcc.textContent   = '…';
+  sumBothFooled.textContent = '…';
+  sumYouBeat.textContent    = '…';
+  sumVerdict.textContent    = '…';
+  sumVerdict.className      = '';
+  bmImageGrid.innerHTML     = '<p class="bm-loading">Crunching results…</p>';
 
   try {
     const r = await fetch('/challenge/submit', {
@@ -127,67 +132,62 @@ async function submitAnswers() {
     if (!r.ok) throw new Error(`Server error ${r.status}`);
     renderReveal(await r.json());
   } catch (err) {
-    bmResults.innerHTML = `<p class="bm-error">Error loading results: ${err.message}</p>`;
+    bmImageGrid.innerHTML = `<p class="bm-error">Error loading results: ${err.message}</p>`;
   }
 }
 
 // ── Reveal ──
-function renderReveal({ results }) {
-  const humanScore = results.filter(r => r.human_correct).length;
-  const modelScore = results.filter(r => r.model_correct).length;
+function renderReveal({ results, summary }) {
+  const pct = v => `${Math.round(v * 100)}%`;
+  const imageList = nums => nums.length === 0
+    ? 'None'
+    : `${nums.length} (${nums.map(n => `Image ${n}`).join(', ')})`;
 
-  scoreHuman.textContent = `${humanScore}/10`;
-  scoreModel.textContent = `${modelScore}/10`;
+  // Summary table
+  sumYourAcc.textContent    = pct(summary.your_accuracy);
+  sumModelAcc.textContent   = pct(summary.model_accuracy);
+  sumBothFooled.textContent = imageList(summary.both_fooled);
+  sumYouBeat.textContent    = summary.you_beat_model.length === 0
+    ? 'None'
+    : `${summary.you_beat_model.length} image${summary.you_beat_model.length > 1 ? 's' : ''} (${summary.you_beat_model.map(n => `Image ${n}`).join(', ')})`;
 
-  if      (humanScore > modelScore) bmVerdict.textContent = 'You beat the model! 🎉';
-  else if (humanScore === modelScore) bmVerdict.textContent = "It's a tie! 🤝";
-  else                                bmVerdict.textContent = 'The model beat you 🤖';
+  sumVerdict.textContent = summary.verdict;
+  sumVerdict.className   = summary.verdict.startsWith('You win')   ? 'verdict-win'
+                         : summary.verdict.startsWith('Model wins') ? 'verdict-loss'
+                         : 'verdict-tie';
 
-  bmResults.innerHTML = '';
+  // Per-image grid
+  bmImageGrid.innerHTML = '';
 
   const tick  = `<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3 3L11 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   const cross = `<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 2l9 9M11 2L2 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
-
-  const labelText = l => l === 'real' ? 'Real' : 'AI-generated';
+  const label = l => l === 'real' ? 'Real' : 'AI';
 
   results.forEach((item, i) => {
-    const status = item.human_correct && item.model_correct   ? 'both-right'
-      :           !item.human_correct && item.model_correct   ? 'model-only'
-      :            item.human_correct && !item.model_correct  ? 'human-only'
-      :                                                         'both-wrong';
+    const status = item.human_correct && item.model_correct  ? 'both-right'
+      :           !item.human_correct && item.model_correct  ? 'model-only'
+      :            item.human_correct && !item.model_correct ? 'human-only'
+      :                                                        'both-wrong';
 
-    const statusLabel = {
-      'both-right': 'Both right',
-      'model-only': 'Model only',
-      'human-only': 'You only',
-      'both-wrong': 'Both wrong',
-    }[status];
-
-    const card = document.createElement('div');
-    card.className = `bm-card bm-card--${status}`;
-    card.style.animationDelay = `${i * 0.04}s`;
-    card.innerHTML = `
-      <div class="bm-card__images">
-        <img class="bm-card__thumb"   src="${item.src}" alt="Image ${i + 1}">
+    const row = document.createElement('div');
+    row.className = `bm-grid-row bm-grid-row--${status}`;
+    row.style.animationDelay = `${i * 0.04}s`;
+    row.innerHTML = `
+      <div class="bm-grid-row__thumbs">
+        <img class="bm-grid-thumb" src="${item.src}" alt="Image ${item.image_num}">
         ${item.gradcam_b64
-          ? `<img class="bm-card__gradcam" src="data:image/png;base64,${item.gradcam_b64}" alt="GradCAM">`
-          : ''}
+          ? `<img class="bm-grid-thumb bm-grid-thumb--gradcam" src="data:image/png;base64,${item.gradcam_b64}" alt="GradCAM">`
+          : '<div class="bm-grid-thumb bm-grid-thumb--empty"></div>'}
       </div>
-      <div class="bm-card__info">
-        <div class="bm-card__num">#${i + 1}</div>
-        <div class="bm-card__truth">Ground truth: <strong>${labelText(item.true_label)}</strong></div>
-        <div class="bm-card__row ${item.human_correct ? 'correct' : 'wrong'}">
-          ${item.human_correct ? tick : cross}
-          <span>You: ${labelText(item.user_answer)}</span>
-        </div>
-        <div class="bm-card__row ${item.model_correct ? 'correct' : 'wrong'}">
-          ${item.model_correct ? tick : cross}
-          <span>Model: ${labelText(item.model_label)}
-            <span class="bm-conf">${Math.round(item.model_confidence * 100)}%</span>
-          </span>
-        </div>
-        <div class="bm-card__status bm-card__status--${status}">${statusLabel}</div>
+      <div class="bm-grid-row__label">Image ${item.image_num}</div>
+      <div class="bm-grid-row__truth">True: <strong>${label(item.true_label)}</strong></div>
+      <div class="bm-grid-row__you ${item.human_correct ? 'correct' : 'wrong'}">
+        You: ${label(item.user_answer)} ${item.human_correct ? tick : cross}
+      </div>
+      <div class="bm-grid-row__model ${item.model_correct ? 'correct' : 'wrong'}">
+        Model: ${label(item.model_label)} ${item.model_correct ? tick : cross}
+        <span class="bm-conf">${Math.round(item.model_confidence * 100)}%</span>
       </div>`;
-    bmResults.appendChild(card);
+    bmImageGrid.appendChild(row);
   });
 }

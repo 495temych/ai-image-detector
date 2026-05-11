@@ -103,21 +103,35 @@
   <section class="bm-screen" id="screen-reveal" hidden>
     <div class="bm-reveal">
 
-      <div class="bm-scoreboard">
-        <div class="bm-score">
-          <span class="bm-score__num" id="score-human">—</span>
-          <span class="bm-score__label">You</span>
-        </div>
-        <div class="bm-vs">vs</div>
-        <div class="bm-score">
-          <span class="bm-score__num" id="score-model">—</span>
-          <span class="bm-score__label">Model</span>
-        </div>
-      </div>
+      <h2 class="bm-reveal__title">Session Results</h2>
 
-      <p class="bm-verdict" id="bm-verdict"></p>
+      <table class="bm-summary">
+        <tbody>
+          <tr>
+            <th>Your accuracy</th>
+            <td id="sum-your-acc">—</td>
+          </tr>
+          <tr>
+            <th>Model accuracy</th>
+            <td id="sum-model-acc">—</td>
+          </tr>
+          <tr>
+            <th>Both fooled by the same image</th>
+            <td id="sum-both-fooled">—</td>
+          </tr>
+          <tr>
+            <th>You beat the model on</th>
+            <td id="sum-you-beat">—</td>
+          </tr>
+          <!-- TODO: region IoU row -->
+          <tr class="bm-summary__verdict-row">
+            <th>Verdict</th>
+            <td id="sum-verdict">—</td>
+          </tr>
+        </tbody>
+      </table>
 
-      <div class="bm-results" id="bm-results">
+      <div class="bm-image-grid" id="bm-image-grid">
         <p class="bm-loading">Crunching results…</p>
       </div>
 

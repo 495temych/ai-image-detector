@@ -129,26 +129,56 @@ app.get('/challenge/image/:session_id/:index', (req, res) => {
 });
 
 // POST /challenge/submit
-// Receives {session_id, answers:[...]} and returns full comparison results.
+// Receives {session_id, answers:[...]} and returns full comparison + summary.
+// Logs the session to feedback/sessions.jsonl for later analysis.
 app.post('/challenge/submit', express.json(), (req, res) => {
   const { session_id, answers } = req.body;
   const session = sessions.get(session_id);
   if (!session) return res.status(404).json({ error: 'Session not found or expired' });
 
   const results = session.map((item, i) => ({
-    id: item.id,
-    src: item.src,
-    true_label: item.true_label,
-    model_label: item.model_label,
+    id:               item.id,
+    image_num:        i + 1,
+    src:              item.src,
+    true_label:       item.true_label,
+    model_label:      item.model_label,
     model_confidence: item.model_confidence,
-    gradcam_b64: item.gradcam_b64,
-    user_answer: answers[i],
-    human_correct: answers[i] === item.true_label,
-    model_correct: item.model_label === item.true_label,
+    gradcam_b64:      item.gradcam_b64,
+    user_answer:      answers[i],
+    human_correct:    answers[i] === item.true_label,
+    model_correct:    item.model_label === item.true_label,
   }));
 
-  sessions.delete(session_id); // clean up — session is single-use
-  res.json({ results });
+  const yourAcc  = results.filter(r => r.human_correct).length / results.length;
+  const modelAcc = results.filter(r => r.model_correct).length / results.length;
+
+  const summary = {
+    your_accuracy:  yourAcc,
+    model_accuracy: modelAcc,
+    both_fooled:    results.filter(r => !r.human_correct && !r.model_correct).map(r => r.image_num),
+    you_beat_model: results.filter(r =>  r.human_correct && !r.model_correct).map(r => r.image_num),
+    verdict: yourAcc > modelAcc ? 'You win this round'
+           : yourAcc < modelAcc ? 'Model wins this round'
+           : 'Tie',
+  };
+
+  // Log session result for later analysis
+  const logEntry = {
+    session_id,
+    timestamp: new Date().toISOString(),
+    summary,
+    results: results.map(({ id, image_num, true_label, model_label, model_confidence, user_answer, human_correct, model_correct }) =>
+      ({ id, image_num, true_label, model_label, model_confidence, user_answer, human_correct, model_correct })
+    ),
+  };
+  fs.appendFileSync(
+    path.join(FEEDBACK_DIR, 'sessions.jsonl'),
+    JSON.stringify(logEntry) + '\n',
+    'utf8'
+  );
+
+  sessions.delete(session_id); // single-use
+  res.json({ session_id, results, summary });
 });
 
 app.listen(PORT, () => {
