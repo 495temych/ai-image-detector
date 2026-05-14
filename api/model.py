@@ -1,6 +1,7 @@
 """Model loading and inference — ONNX for /predict, PyTorch for /explain."""
 import base64
 import io
+import threading
 from pathlib import Path
 
 import cv2
@@ -53,6 +54,10 @@ def _load_pytorch() -> torch.nn.Module:
 onnx_session: ort.InferenceSession = _load_onnx()
 pytorch_model: torch.nn.Module = _load_pytorch()
 
+# GradCAM serialisation lock — pytorch_model is a shared singleton; concurrent
+# forward+backward passes race on the hook lists and corrupt each other's maps.
+_gradcam_lock = threading.Lock()
+
 
 def _preprocess(image_bytes: bytes) -> tuple[np.ndarray, Image.Image]:
     pil = Image.open(io.BytesIO(image_bytes)).convert("RGB")
@@ -86,20 +91,23 @@ def explain_gradcam(image_bytes: bytes) -> tuple[str, float, str]:
     def bwd_hook(_, __, grad_output):
         gradients.append(grad_output[0].detach())
 
-    h_fwd = target_layer.register_forward_hook(fwd_hook)
-    h_bwd = target_layer.register_full_backward_hook(bwd_hook)
+    # Serialise forward+backward: concurrent requests share pytorch_model and
+    # would stack their hooks on the same layer, corrupting each other's maps.
+    with _gradcam_lock:
+        h_fwd = target_layer.register_forward_hook(fwd_hook)
+        h_bwd = target_layer.register_full_backward_hook(bwd_hook)
 
-    try:
-        logits = pytorch_model(x)
-        probs = F.softmax(logits, dim=1)
-        class_idx = int(probs.argmax())
-        confidence = float(probs[0, class_idx])
+        try:
+            logits = pytorch_model(x)
+            probs = F.softmax(logits, dim=1)
+            class_idx = int(probs.argmax())
+            confidence = float(probs[0, class_idx])
 
-        pytorch_model.zero_grad()
-        logits[0, class_idx].backward()
-    finally:
-        h_fwd.remove()
-        h_bwd.remove()
+            pytorch_model.zero_grad()
+            logits[0, class_idx].backward()
+        finally:
+            h_fwd.remove()
+            h_bwd.remove()
 
     act = activations[0].squeeze(0)       # (C, H, W)
     grad = gradients[0].squeeze(0)        # (C, H, W)
