@@ -30,7 +30,10 @@ mlartifacts/
 .vscode/
 .idea/
 
-# Docs / samples (not needed in containers)
+# Docs / generated assets (not needed in containers)
 imgs/
 pitch_decks/
 site/
+
+# UI runtime data (mounted as a volume at runtime)
+ui/data/

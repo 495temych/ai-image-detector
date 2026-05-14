@@ -8,12 +8,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Install Python deps before copying code so this layer is cached
-COPY api/requirements.txt api/requirements.txt
-RUN pip install --no-cache-dir -r api/requirements.txt
+# Install Python deps first so this layer is cached
+# (context = ./api/, so paths are relative to that directory)
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy source + model weights (weights are baked in — no credentials needed at runtime)
-COPY api/ api/
+# Copy source + model weights into /app/api/ so the module path
+# `api.main` (used in the CMD) resolves correctly from WORKDIR /app
+COPY . /app/api/
 
 EXPOSE 8000
 

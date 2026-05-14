@@ -9,8 +9,8 @@ const app = express();
 const PORT = 3000;
 const API_URL = process.env.API_URL || 'http://localhost:8000';
 
-// picture_samples lives one level up from ui/ locally; in Docker it's copied alongside server.js
-const SAMPLES_DIR = process.env.SAMPLES_DIR || path.join(__dirname, '..', 'picture_samples');
+// picture_samples lives one level up from server.js both locally (ui/../) and in Docker (/app/../)
+const SAMPLES_DIR = path.join(__dirname, '..', 'picture_samples');
 
 // ── Challenge: in-memory session store ──
 const sessions = new Map(); // session_id → Array<SessionItem>
@@ -27,6 +27,13 @@ function pickRandom(arr, n) {
 function readSampleFiles(label) {
   const dir = path.join(SAMPLES_DIR, label);
   return fs.readdirSync(dir).filter(f => /\.(jpe?g|png|webp)$/i.test(f));
+}
+
+function getImagePool(label) {
+  const dir = path.join(SAMPLES_DIR, label);
+  return fs.readdirSync(dir)
+    .filter(f => f.endsWith('.jpg') || f.endsWith('.png'))
+    .map(f => ({ id: `${label}/${f}`, true_label: label, file: f, label }));
 }
 
 const FEEDBACK_DIR = path.join(__dirname, 'feedback');
@@ -71,39 +78,41 @@ app.post('/feedback', upload.single('image'), (req, res) => {
 
 // ── Challenge routes ──
 
+// GET /challenge/image/:label/:file — serve benchmark image by label and filename
+app.get('/challenge/image/:label/:file', (req, res) => {
+  const { label, file } = req.params;
+  if (!['fake', 'real'].includes(label)) return res.status(400).end();
+  res.sendFile(path.join(SAMPLES_DIR, label, file));
+});
+
 // GET /challenge/session
-// Picks 5 fake + 5 real, runs all 10 /predict-explain in parallel, caches results.
-// Returns {session_id, images:[{id,src}]} — no labels, no model results exposed yet.
+// Picks 5 fake + 5 real from the filesystem pool, runs all 10 /predict-explain in parallel,
+// caches results in memory.  Returns {session_id, images:[{id,src}]} — answers not exposed yet.
 app.get('/challenge/session', async (req, res) => {
   try {
-    const fakeFiles = pickRandom(readSampleFiles('fake'), 5);
-    const realFiles = pickRandom(readSampleFiles('real'), 5);
+    const fakePool = getImagePool('fake');
+    const realPool = getImagePool('real');
     const entries = [
-      ...fakeFiles.map(f => ({ file: f, label: 'fake' })),
-      ...realFiles.map(f => ({ file: f, label: 'real' })),
-    ];
-    // shuffle entries
-    for (let i = entries.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [entries[i], entries[j]] = [entries[j], entries[i]];
-    }
+      ...pickRandom(fakePool, 5),
+      ...pickRandom(realPool, 5),
+    ].sort(() => Math.random() - 0.5);
 
     const sessionId = uuidv4();
 
     // Fire all predict-explain calls in parallel
-    const items = await Promise.all(entries.map(async ({ file, label }, idx) => {
-      const filePath = path.join(SAMPLES_DIR, label, file);
+    const items = await Promise.all(entries.map(async (entry, idx) => {
+      const filePath = path.join(SAMPLES_DIR, entry.label, entry.file);
       const fileBuffer = fs.readFileSync(filePath);
       const blob = new Blob([fileBuffer], { type: 'image/jpeg' });
       const form = new FormData();
-      form.append('file', blob, file);
+      form.append('file', blob, entry.file);
       const r = await fetch(`${API_URL}/predict-explain`, { method: 'POST', body: form });
       const data = await r.json();
       return {
         id: idx,
-        src: `/challenge/image/${sessionId}/${idx}`,
+        src: `/challenge/image/${entry.label}/${entry.file}`,
         filePath,
-        true_label: label,
+        true_label: entry.label,
         model_label: data.label,
         model_confidence: data.confidence,
         gradcam_b64: data.gradcam_base64 || null,
@@ -116,16 +125,6 @@ app.get('/challenge/session', async (req, res) => {
     console.error('challenge/session error:', err);
     res.status(500).json({ error: err.message });
   }
-});
-
-// GET /challenge/image/:session_id/:index
-// Serves the image file without leaking its true label in the URL.
-app.get('/challenge/image/:session_id/:index', (req, res) => {
-  const session = sessions.get(req.params.session_id);
-  if (!session) return res.status(404).json({ error: 'Session not found' });
-  const item = session[parseInt(req.params.index, 10)];
-  if (!item) return res.status(404).json({ error: 'Image not found' });
-  res.sendFile(item.filePath);
 });
 
 // POST /challenge/submit

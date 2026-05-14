@@ -32,6 +32,15 @@ mlartifacts/
 # API sample images (pulled from S3, not committed)
 api/samples/
 
+# Challenge image pool (local only — not committed)
+picture_samples/
+image_samples/
+
+# UI runtime data (SQLite DB, session logs)
+ui/data/*
+!ui/data/.gitkeep
+ui/feedback/
+
 # Environment
 .env
 *.env

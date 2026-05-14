@@ -1,25 +1,20 @@
 services:
-
   api:
-    build:
-      context: .
-      dockerfile: api/Dockerfile
+    build: ./api
     ports:
       - "8000:8000"
+    restart: unless-stopped
 
   ui:
     build:
-      context: .
+      context: .           # repo root — required so COPY picture_samples/ works
       dockerfile: ui/Dockerfile
     ports:
       - "3000:3000"
+    volumes:
+      - ./ui/data:/app/data   # persists SQLite DB across restarts
     environment:
-      - API_URL=http://api:8000          # reaches the api service by its compose service name
-      - SAMPLES_DIR=/app/picture_samples # challenge image pool (copied into image at build time)
+      - API_URL=http://api:8000
     depends_on:
       - api
-    volumes:
-      - feedback-data:/app/feedback  # persists user feedback and uploaded images across restarts
-
-volumes:
-  feedback-data:
+    restart: unless-stopped
