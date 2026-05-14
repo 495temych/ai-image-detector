@@ -136,7 +136,16 @@ function getImageExtendedMany(ids) {
   return out;
 }
 
+function seedIfEmpty() {
+  const { total_sessions } = db.prepare('SELECT COUNT(*) AS total_sessions FROM sessions').get();
+  if (total_sessions === 0) {
+    console.log('[db] Empty database — running seed…');
+    require('./scripts/seed_db');
+    console.log('[db] Seed complete.');
+  }
+}
+
 module.exports = {
   saveSession, getImageStats, getImageStatsMany, getGlobalStats,
-  getRecentSessions, getImageExtendedMany,
+  getRecentSessions, getImageExtendedMany, seedIfEmpty,
 };

@@ -6,8 +6,12 @@ const path = require('path');
 const fs = require('fs');
 const {
   saveSession, getImageStatsMany, getGlobalStats,
-  getRecentSessions, getImageExtendedMany,
+  getRecentSessions, getImageExtendedMany, seedIfEmpty,
 } = require('./db');
+
+// Seed analytics data on first run so Challenge mode has community stats
+// immediately — runs synchronously before the server begins accepting requests.
+seedIfEmpty();
 
 const app = express();
 const PORT = 3000;
