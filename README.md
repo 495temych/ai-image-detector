@@ -28,7 +28,7 @@ game that feeds a persistent session database.
 
 Upload any image and get an instant verdict with a visual explanation.
 
-![Detector — original vs GradCAM heatmap in compare mode](imgs/UI-explain-preview.png)
+![Detector — original vs GradCAM heatmap in compare mode](./imgs/UI-explain-preview.png)
 
 **What it shows:**
 - **Verdict card** — Real or AI-generated with an animated confidence gauge
@@ -46,15 +46,18 @@ Upload any image and get an instant verdict with a visual explanation.
 
 A 10-image human vs model benchmark game. No reveals until all 10 are answered.
 
-![Challenge — session summary with insight cards and community stats](imgs/UI-session-summary.png)
-
 **How it works:**
 
 1. Ten images are drawn from the benchmark pool (5 real + 5 AI-generated, shuffled).
    Model inference runs on all 10 in parallel at session start — results are cached
    server-side so the reveal is instant.
 2. For each image the user picks **Real** or **AI-generated**, then advances.
+
+![Challenge — choose Real or AI-generated for each image](./imgs/UI-choose.png)
+
 3. After image 10, the reveal screen shows:
+
+![Challenge — session summary with insight cards and community stats](./imgs/UI-session-summary.png)
 
 **Summary table**
 
