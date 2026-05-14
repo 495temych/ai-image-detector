@@ -128,12 +128,25 @@
             <th>Verdict</th>
             <td id="sum-verdict">—</td>
           </tr>
+          <tr class="bm-summary__separator">
+            <td colspan="2">Community average (all sessions)</td>
+          </tr>
+          <tr>
+            <th>Avg human accuracy</th>
+            <td id="sum-global-human">—</td>
+          </tr>
+          <tr>
+            <th>Avg model accuracy</th>
+            <td id="sum-global-model">—</td>
+          </tr>
         </tbody>
       </table>
 
       <div class="bm-results" id="bm-results">
         <p class="bm-loading">Crunching results…</p>
       </div>
+
+      <div class="bm-hardest" id="bm-hardest" hidden></div>
 
       <button class="bm-restart-btn" id="btn-restart">Play again</button>
 

@@ -14,7 +14,10 @@ const sumModelAcc   = document.getElementById('sum-model-acc');
 const sumBothFooled = document.getElementById('sum-both-fooled');
 const sumYouBeat    = document.getElementById('sum-you-beat');
 const sumVerdict    = document.getElementById('sum-verdict');
+const sumGlobalHuman = document.getElementById('sum-global-human');
+const sumGlobalModel = document.getElementById('sum-global-model');
 const bmResults     = document.getElementById('bm-results');
+const bmHardest     = document.getElementById('bm-hardest');
 const apiDot        = document.getElementById('api-dot');
 const apiStatus     = document.getElementById('api-status');
 
@@ -121,7 +124,10 @@ async function submitAnswers() {
   sumYouBeat.textContent    = '…';
   sumVerdict.textContent    = '…';
   sumVerdict.className      = '';
-  bmResults.innerHTML       = '<p class="bm-loading">Crunching results…</p>';
+  sumGlobalHuman.textContent = '…';
+  sumGlobalModel.textContent = '…';
+  bmHardest.hidden           = true;
+  bmResults.innerHTML        = '<p class="bm-loading">Crunching results…</p>';
 
   try {
     const r = await fetch('/challenge/submit', {
@@ -156,6 +162,9 @@ function computeSummary(results) {
 // ── Reveal ──
 function renderReveal(data) {
   const { results } = data;
+  const community = data.community ?? {};
+  const global    = data.global    ?? null;
+
   // Use server-computed summary if present; compute client-side otherwise
   const summary = data.summary ?? computeSummary(results);
 
@@ -164,7 +173,7 @@ function renderReveal(data) {
     ? 'None'
     : `${nums.length} (${nums.map(n => `Image ${n}`).join(', ')})`;
 
-  // ── Summary table ──
+  // ── Session summary ──
   sumYourAcc.textContent    = pct(summary.your_accuracy);
   sumModelAcc.textContent   = pct(summary.model_accuracy);
   sumBothFooled.textContent = imageList(summary.both_fooled);
@@ -176,6 +185,15 @@ function renderReveal(data) {
   sumVerdict.className   = summary.verdict.startsWith('You win')    ? 'verdict-win'
                          : summary.verdict.startsWith('Model wins') ? 'verdict-loss'
                          : 'verdict-tie';
+
+  // ── Global / community averages ──
+  if (global) {
+    sumGlobalHuman.textContent = `${global.avg_human_acc_pct ?? '—'}%`;
+    sumGlobalModel.textContent = `${global.avg_model_acc_pct ?? '—'}%`;
+  } else {
+    sumGlobalHuman.textContent = '—';
+    sumGlobalModel.textContent = '—';
+  }
 
   // ── Per-image cards (full GradCAM view) ──
   bmResults.innerHTML = '';
@@ -197,6 +215,14 @@ function renderReveal(data) {
       'human-only': 'You only',
       'both-wrong': 'Both wrong',
     }[status];
+
+    const stats = item.image_id ? community[item.image_id] : null;
+    const communityBar = stats?.total_plays > 0 ? `
+      <div class="community-bar">
+        <span class="comm-plays">${stats.total_plays} plays</span>
+        <span class="comm-human">Humans ${stats.human_acc_pct}%</span>
+        <span class="comm-model">Model ${stats.model_acc_pct}%</span>
+      </div>` : '';
 
     const card = document.createElement('div');
     card.className = `bm-card bm-card--${status}`;
@@ -222,7 +248,29 @@ function renderReveal(data) {
           </span>
         </div>
         <div class="bm-card__status bm-card__status--${status}">${statusLabel}</div>
+        ${communityBar}
       </div>`;
     bmResults.appendChild(card);
   });
+
+  // ── Hardest image callout ──
+  const hardestId = data.hardest_image_id;
+  if (hardestId && community[hardestId]) {
+    const s = community[hardestId];
+    const hardestItem = results.find(r => r.image_id === hardestId);
+    bmHardest.hidden = false;
+    bmHardest.innerHTML = `
+      <div class="bm-hardest__inner">
+        <div class="bm-hardest__label">🔥 Hardest image this session</div>
+        ${hardestItem ? `<img class="bm-hardest__thumb" src="${hardestItem.src}" alt="Hardest image">` : ''}
+        <div class="bm-hardest__stats">
+          <span class="comm-plays">${s.total_plays} plays</span>
+          <span class="comm-human">Humans ${s.human_acc_pct}%</span>
+          <span class="comm-model">Model ${s.model_acc_pct}%</span>
+          <span class="comm-confusion">Fools ${s.human_confusion_pct}% of humans</span>
+        </div>
+      </div>`;
+  } else {
+    bmHardest.hidden = true;
+  }
 }

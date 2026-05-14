@@ -4,13 +4,14 @@ const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 const fs = require('fs');
+const { saveSession, getImageStatsMany, getGlobalStats } = require('./db');
 
 const app = express();
 const PORT = 3000;
 const API_URL = process.env.API_URL || 'http://localhost:8000';
 
-// picture_samples lives one level up from server.js both locally (ui/../) and in Docker (/app/../)
-const SAMPLES_DIR = path.join(__dirname, '..', 'picture_samples');
+// image_samples lives one level up from server.js both locally (ui/../) and in Docker (/app/../)
+const SAMPLES_DIR = path.join(__dirname, '..', 'image_samples');
 
 // ── Challenge: in-memory session store ──
 const sessions = new Map(); // session_id → Array<SessionItem>
@@ -110,6 +111,7 @@ app.get('/challenge/session', async (req, res) => {
       const data = await r.json();
       return {
         id: idx,
+        image_id: `${entry.label}/${entry.file}`,
         src: `/challenge/image/${entry.label}/${entry.file}`,
         filePath,
         true_label: entry.label,
@@ -137,6 +139,7 @@ app.post('/challenge/submit', express.json(), (req, res) => {
 
   const results = session.map((item, i) => ({
     id:               item.id,
+    image_id:         item.image_id,
     image_num:        i + 1,
     src:              item.src,
     true_label:       item.true_label,
@@ -161,14 +164,41 @@ app.post('/challenge/submit', express.json(), (req, res) => {
            : 'Tie',
   };
 
-  // Log session result for later analysis (best-effort — never block the response)
+  // ── Persist to SQLite (best-effort) ──
+  try {
+    saveSession(session_id, results.map(r => ({
+      image_id:      r.image_id,
+      true_label:    r.true_label,
+      user_answer:   r.user_answer,
+      model_label:   r.model_label,
+      model_conf:    r.model_confidence,
+      human_correct: r.human_correct,
+      model_correct: r.model_correct,
+    })));
+  } catch (dbErr) {
+    console.warn('DB save failed (non-fatal):', dbErr.message);
+  }
+
+  // ── Community + global stats (queried after save so this session is counted) ──
+  const community = getImageStatsMany(results.map(r => r.image_id));
+  const global    = getGlobalStats();
+
+  // Find hardest image in this session by community human confusion rate
+  const hardest = results.reduce((worst, r) => {
+    const stats = community[r.image_id];
+    if (!worst || stats.human_confusion_pct > community[worst.image_id].human_confusion_pct)
+      return r;
+    return worst;
+  }, null);
+
+  // ── JSONL log (best-effort) ──
   try {
     const logEntry = {
       session_id,
       timestamp: new Date().toISOString(),
       summary,
-      results: results.map(({ id, image_num, true_label, model_label, model_confidence, user_answer, human_correct, model_correct }) =>
-        ({ id, image_num, true_label, model_label, model_confidence, user_answer, human_correct, model_correct })
+      results: results.map(({ id, image_id, image_num, true_label, model_label, model_confidence, user_answer, human_correct, model_correct }) =>
+        ({ id, image_id, image_num, true_label, model_label, model_confidence, user_answer, human_correct, model_correct })
       ),
     };
     fs.appendFileSync(
@@ -181,7 +211,7 @@ app.post('/challenge/submit', express.json(), (req, res) => {
   }
 
   sessions.delete(session_id); // single-use
-  res.json({ session_id, results, summary });
+  res.json({ session_id, results, summary, community, global, hardest_image_id: hardest?.image_id });
 });
 
 app.listen(PORT, () => {

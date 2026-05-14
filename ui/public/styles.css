@@ -1364,6 +1364,80 @@ main {
 .bm-grid-row__you.wrong,
 .bm-grid-row__model.wrong   { color: var(--warn); }
 
+/* ── Community stats bar (inside each bm-card) ── */
+.community-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border);
+}
+
+.comm-plays,
+.comm-human,
+.comm-model,
+.comm-confusion {
+  font-size: 0.72rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.comm-plays     { background: var(--surface); color: var(--muted); }
+.comm-human     { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }
+.comm-model     { background: color-mix(in srgb, var(--ok) 12%, transparent);     color: var(--ok); }
+.comm-confusion { background: color-mix(in srgb, var(--warn) 12%, transparent);   color: var(--warn); }
+
+/* ── Summary table separator row ── */
+.bm-summary__separator td {
+  padding-top: 1.1rem;
+  padding-bottom: 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+}
+
+/* ── Hardest image callout ── */
+.bm-hardest {
+  margin: 2rem 0 1rem;
+}
+
+.bm-hardest__inner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: 10px;
+  border: 1.5px solid color-mix(in srgb, var(--warn) 40%, transparent);
+  background: color-mix(in srgb, var(--warn) 6%, var(--surface));
+}
+
+.bm-hardest__label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--warn);
+  white-space: nowrap;
+  min-width: 7rem;
+}
+
+.bm-hardest__thumb {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.bm-hardest__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
 /* ── Utilities ── */
 [hidden] { display: none !important; }
 
