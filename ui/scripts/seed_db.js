@@ -43,8 +43,8 @@ function sample(arr, n) {
 }
 
 function simulateAnswer(true_label, diff, isModel) {
-  const base = isModel ? 0.90 : 0.65;
-  const drop = isModel ? 0.40 : 0.60;
+  const base = isModel ? 0.95 : 0.86;
+  const drop = isModel ? 0.12 : 0.22;
   const correct = Math.random() < (base - diff * drop);
   return correct ? true_label : (true_label === 'fake' ? 'real' : 'fake');
 }
