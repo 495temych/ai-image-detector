@@ -46,3 +46,5 @@ Thumbs.db
 # Runtime artifacts
 mlflow_run_id.txt
 labels.json
+/data
+/models
