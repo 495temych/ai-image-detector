@@ -32,6 +32,5 @@ mlartifacts/
 
 # Docs / samples (not needed in containers)
 imgs/
-picture_samples/
 pitch_decks/
 site/
