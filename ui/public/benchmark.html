@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Challenge — AI Image Detector</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..900,0..100,0..1;1,9..144,300..900,0..100,0..1&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead__brand">
+    <span class="brand-icon" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <circle cx="10" cy="10" r="8.5" stroke="currentColor" stroke-width="1.2"/>
+        <circle cx="10" cy="10" r="3" fill="currentColor"/>
+        <line x1="10" y1="1" x2="10" y2="4" stroke="currentColor" stroke-width="1.2"/>
+        <line x1="10" y1="16" x2="10" y2="19" stroke="currentColor" stroke-width="1.2"/>
+        <line x1="1" y1="10" x2="4" y2="10" stroke="currentColor" stroke-width="1.2"/>
+        <line x1="16" y1="10" x2="19" y2="10" stroke="currentColor" stroke-width="1.2"/>
+      </svg>
+    </span>
+    <span class="brand-name">AI Image Detector</span>
+  </div>
+  <nav class="tab-nav" aria-label="Section">
+    <a class="tab-link" href="index.html">Detector</a>
+    <a class="tab-link tab-link--active" href="benchmark.html">Challenge</a>
+  </nav>
+  <div class="masthead__right">
+    <div class="api-pill" id="api-pill">
+      <span class="dot" id="api-dot"></span>
+      <span id="api-status">Connecting…</span>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- ① Start screen -->
+  <section class="bm-screen" id="screen-start">
+    <div class="bm-start">
+      <p class="bm-start__kicker">EfficientNet-B0 · Human vs Model</p>
+      <h1 class="bm-start__title">Can you beat the <em>model</em>?</h1>
+      <p class="bm-start__desc">
+        10 images, one question each — Real photograph or AI-generated?
+        Afterwards you'll see your score against the model, with GradCAM explanations of every decision.
+      </p>
+      <div class="bm-rules">
+        <div class="bm-rule">
+          <span class="bm-rule__num">1</span>
+          <span>Each image is selected randomly from our benchmark set of real and AI-generated photographs.</span>
+        </div>
+        <div class="bm-rule">
+          <span class="bm-rule__num">2</span>
+          <span>Click <strong>Real</strong> or <strong>AI-generated</strong> for each one. No time limit.</span>
+        </div>
+        <div class="bm-rule">
+          <span class="bm-rule__num">3</span>
+          <span>After image 10 the model runs its own analysis — then you see who won.</span>
+        </div>
+      </div>
+      <button class="bm-start-btn" id="btn-start">Start Challenge</button>
+    </div>
+  </section>
+
+  <!-- ② Image-by-image game -->
+  <section class="bm-screen" id="screen-play" hidden>
+    <div class="bm-game">
+      <div class="bm-progress">
+        <div class="bm-progress-bar">
+          <div class="bm-progress-fill" id="progress-fill"></div>
+        </div>
+        <span class="bm-progress-label" id="progress-label">1 / 10</span>
+      </div>
+
+      <div class="bm-image-wrap">
+        <img id="game-img" alt="Is this image real or AI-generated?">
+      </div>
+
+      <div class="bm-choices">
+        <button class="bm-choice bm-choice--real" id="btn-real">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.4"/>
+            <path d="M4.5 8l2.5 2.5L11.5 5.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Real
+        </button>
+        <button class="bm-choice bm-choice--fake" id="btn-fake">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.4"/>
+            <path d="M5 5l6 6M11 5L5 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+          AI-generated
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ③ Reveal screen -->
+  <section class="bm-screen" id="screen-reveal" hidden>
+    <div class="bm-reveal">
+
+      <h2 class="bm-reveal__title">Session Results</h2>
+
+      <table class="bm-summary">
+        <tbody>
+          <tr>
+            <th>Your accuracy</th>
+            <td id="sum-your-acc">—</td>
+          </tr>
+          <tr>
+            <th>Model accuracy</th>
+            <td id="sum-model-acc">—</td>
+          </tr>
+          <tr>
+            <th>Both fooled by the same image</th>
+            <td id="sum-both-fooled">—</td>
+          </tr>
+          <tr>
+            <th>You beat the model on</th>
+            <td id="sum-you-beat">—</td>
+          </tr>
+          <!-- TODO: region IoU row -->
+          <tr class="bm-summary__verdict-row">
+            <th>Verdict</th>
+            <td id="sum-verdict">—</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="bm-results" id="bm-results">
+        <p class="bm-loading">Crunching results…</p>
+      </div>
+
+      <button class="bm-restart-btn" id="btn-restart">Play again</button>
+
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <span>EfficientNet-B0 · acc 89.6% · AUC 96.2%</span>
+  <span class="footer-sep">·</span>
+  <span>Marcos · Artemi · Afshin · Jibin</span>
+  <span class="footer-sep">·</span>
+  <span>ZHAW MLOps Spring 2026</span>
+</footer>
+
+<script src="benchmark.js"></script>
+</body>
+</html>

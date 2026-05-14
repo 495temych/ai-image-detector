@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# Secrets
+.env
+api/.env
+
+# Node
+ui/node_modules/
+ui/feedback/
+
+# Data
+data/raw/
+data/processed/
+mlruns/
+mlartifacts/
+
+# Repo tooling
+.git/
+.github/
+.dvc/
+.claude/
+
+# OS / IDE
+.DS_Store
+.vscode/
+.idea/
+
+# Docs / samples (not needed in containers)
+imgs/
+picture_samples/
+pitch_decks/
+site/
