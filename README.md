@@ -1,24 +1,30 @@
 # AI Image Authenticity Detector
 
-Binary image classifier that flags whether an image is **AI-generated** or **real**.
-Built as an end-to-end **MLOps pipeline** for the *Machine Learning and Data in Operation*
-(TSM_MachLeData) course at ZHAW School of Engineering, Spring 2026.
+Generative models have crossed the threshold of photorealism. This project puts
+a **fine-tuned EfficientNet-B0** classifier into production as a fully operational
+ML system — with two live user-facing products built on top of it:
 
-**Model:** EfficientNet-B0 · Test accuracy: 89.6% · AUC: 96.2%
+- **Detector** — upload any image, get an instant verdict and a GradCAM heatmap
+  showing exactly where the model looked
+- **Challenge** — a 10-image human vs model game that accumulates every session
+  into a persistent database, surfaces community accuracy stats, and tracks the
+  human–model performance gap over time
 
----
+The goal is not to push detection accuracy to its limit. It's to demonstrate
+what it takes to go from a trained model to a **reproducible, tracked, versioned,
+and deployable ML pipeline** — the full MLOps stack around the model.
 
-## What This Project Is
+We fine-tuned EfficientNet-B0 on 5,000 images from a 60k Kaggle dataset
+(real vs AI-generated photographs), reaching **89.6 % test accuracy and 96.2 % AUC**.
+That model is the fixed artifact the operations pipeline is built around: versioned
+with DVC, tracked in MLflow, exported to ONNX for serving, promoted through a model
+registry, and shipped in a Docker container — all wired together with GitHub Actions CI.
 
-Generative image models have crossed the threshold of photorealism. This project
-builds the *operations layer* around a binary classifier — not to beat
-state-of-the-art detection accuracy, but to demonstrate a fully reproducible,
-tracked, automated, and deployable ML pipeline.
+Every registered model version is traceable back to a
+**(git commit · DVC data version · MLflow run ID)** triple.
 
-Every registered model is traceable back to a **(git commit · DVC data version ·
-MLflow run ID)** triple. The pipeline covers data versioning, experiment tracking,
-model registry, CI automation, containerised serving, and a user-facing benchmark
-game that feeds a persistent session database.
+**Model:** EfficientNet-B0 · Test accuracy 89.6% · AUC 96.2%  
+**Course:** Machine Learning and Data in Operation (TSM_MachLeData) · ZHAW School of Engineering · Spring 2026
 
 ---
 
