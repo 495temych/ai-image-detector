@@ -1,171 +1,149 @@
 # AI Image Authenticity Detector
 
 Binary image classifier that flags whether an image is **AI-generated** or **real**.
-Built as an end-to-end **MLOps pipeline** for the *Machine Learning and Data in
-Operation* (TSM_MachLeData) course at ZHAW.
+Built as an end-to-end **MLOps pipeline** for the *Machine Learning and Data in Operation*
+(TSM_MachLeData) course at ZHAW School of Engineering, Spring 2026.
 
-**Model:** EfficientNet-B0 · Test acc: 89.6% · AUC: 96.2%
-
----
-
-## Project Scope
-
-The deliverable of this project is the **pipeline**, not the model.
-Given an image → output `real` or `ai-generated` with a confidence score —
-produced by a workflow that is reproducible, tracked, automated, and deployable.
-
-**In scope**
-- Data versioning tied to every training run
-- Experiment tracking (metrics, params, artifacts) for every run
-- A model registry with clear promotion stages
-- Continuous integration that retrains, evaluates, and registers on every push
-- Packaged serving (REST + demo UI) behind a portable container
-
-**Not in scope**
-- Beating state-of-the-art accuracy on AI-vs-real detection
-- Building a novel model architecture — we fine-tune an off-the-shelf backbone
+**Model:** EfficientNet-B0 · Test accuracy: 89.6% · AUC: 96.2%
 
 ---
 
-## Why This Project
+## What This Project Is
 
-Generative image models have crossed the threshold of photorealism, which makes
-provenance-and-authenticity tooling increasingly useful (journalism, moderation,
-identity verification). A binary `real` / `ai-generated` classifier is a
-well-scoped, well-documented problem — which lets us spend our time on the
-*operations* layer instead of on task-specific research.
+Generative image models have crossed the threshold of photorealism. This project
+builds the *operations layer* around a binary classifier — not to beat
+state-of-the-art detection accuracy, but to demonstrate a fully reproducible,
+tracked, automated, and deployable ML pipeline.
+
+Every registered model is traceable back to a **(git commit · DVC data version ·
+MLflow run ID)** triple. The pipeline covers data versioning, experiment tracking,
+model registry, CI automation, containerised serving, and a user-facing benchmark
+game that feeds a persistent session database.
 
 ---
 
-## Web UI
+## Two User-Facing Modes
 
-![UI preview — compare mode showing original vs GradCAM heatmap side by side](imgs/UI-explain-preview.png)
+### Mode 1 — Detector
 
-A Node.js frontend that lets you drag-and-drop any image and instantly see whether the model considers it real or AI-generated, along with a GradCAM explanation of which regions drove the decision.
+Upload any image and get an instant verdict with a visual explanation.
 
-**Key features:**
+![Detector — original vs GradCAM heatmap in compare mode](imgs/UI-explain-preview.png)
 
-- **Drag & drop / paste / browse** image upload with live preview
-- **Verdict card** — Real or AI-generated with animated confidence gauge
-- **Three GradCAM view modes:**
-  - *Original* — the uploaded image, no overlay
-  - *Blend* — GradCAM heatmap faded over the image via an opacity slider (0–100%)
-  - *Compare* — draggable vertical divider splits the frame: original on the left, GradCAM on the right
-- **JET colormap legend** — blue = low activation, red = high activation
-- **Model attention thumbnail** in the result card shows where the model focused
-- **Feedback system** — mark predictions correct or wrong; saves to `ui/feedback/feedback.jsonl` for future retraining
+**What it shows:**
+- **Verdict card** — Real or AI-generated with an animated confidence gauge
+- **GradCAM viewer** — three modes:
+  - *Original* — the image as uploaded
+  - *Blend* — GradCAM heatmap overlaid via an opacity slider
+  - *Compare* — draggable vertical divider: original left, GradCAM right
+- **Model attention thumbnail** — a 224×224 crop of where the model focused
+- **JET colormap** — red = high activation, blue = low
+- **Feedback** — mark the prediction correct or wrong; logged for retraining
+
+---
+
+### Mode 2 — Challenge
+
+A 10-image human vs model benchmark game. No reveals until all 10 are answered.
+
+![Challenge — session summary with insight cards and community stats](imgs/UI-session-summary.png)
+
+**How it works:**
+
+1. Ten images are drawn from the benchmark pool (5 real + 5 AI-generated, shuffled).
+   Model inference runs on all 10 in parallel at session start — results are cached
+   server-side so the reveal is instant.
+2. For each image the user picks **Real** or **AI-generated**, then advances.
+3. After image 10, the reveal screen shows:
+
+**Summary table**
+
+| Row | What it means |
+|-----|---------------|
+| Your accuracy | Percentage of your 10 answers that were correct |
+| Model accuracy | Percentage of the model's 10 predictions that were correct |
+| Both fooled | Images where neither you nor the model got it right |
+| You beat the model | Images where you were right and the model was wrong |
+| Verdict | Who won this round |
+| Community average | Avg human and model accuracy across all stored sessions |
+
+**Three insight cards** — drawn from all previous sessions in the database:
+
+| Card | Logic |
+|------|-------|
+| 🔥 Hardest this session | Image with lowest human accuracy in community data |
+| ⚖️ Most contested | Image with community human accuracy closest to 50% |
+| ✅ Easiest this session | Image with highest human accuracy in community data |
+
+Each card shows a dynamic caption explaining *why* the image is notable
+(e.g. "Model sees it clearly, most humans don't" / "Model overconfident and wrong 34% of the time").
+
+**Session analytics chart** — line chart of human vs model accuracy across the last
+20 sessions, showing that human accuracy fluctuates while model accuracy stays stable.
+This is the baseline the retraining loop aims to close.
+
+**Per-image breakdown** — each of the 10 images with original thumbnail, GradCAM,
+your answer, model answer, confidence, and community stats (plays · human % · model %).
+
+**Session persistence:** every completed round is saved to a local SQLite database
+(`ui/data/sessions.db`). Community stats are computed live from all stored sessions.
+The database is seeded with 120 synthetic sessions to pre-populate the analytics.
 
 ---
 
 ## Pipeline Overview
 
 ```
- Kaggle notebook (EfficientNet fine-tuning)   ← training happens here, externally
-      │
-      │  download trained .pt weights
-      ▼
-  DVC  ───────────────┐  (data + model versioning; each run pinned to a data hash)
-      │               │
-      ▼               │
-  Evaluate on         │
-  test split   ───────┼──▶ MLflow  (metrics, params, artifacts, model registry)
-      │               │
-      ▼               │
-  ONNX export ────────┘
+Kaggle (EfficientNet-B0 fine-tuning, external)
       │
       ▼
-  GitHub Actions (CI: evaluate → register → export → docker, on push to main)
+DVC — data + model versioning (DagsHub remote)
       │
       ▼
-  FastAPI + Docker (REST endpoints: /predict, /predict-explain)
+MLflow — experiment tracking, model registry (DagsHub)
       │
       ▼
-  Node.js + Express (web UI on port 3000)
+ONNX export — portable inference artefact
       │
       ▼
-  Docker Compose (packages API + UI — one command to run)
+GitHub Actions — CI: evaluate → register → export → Docker on push to main
+      │
+      ▼
+FastAPI + Docker — REST API (/predict, /predict-explain)
+      │
+      ▼
+Node.js + Express — Web UI (port 3000)
+      │  ├── Mode 1: Detector (upload + GradCAM)
+      │  └── Mode 2: Challenge (benchmark game + session DB)
+      ▼
+Docker Compose — single command to run everything
 ```
 
-Training runs once externally on Kaggle ([notebook](https://www.kaggle.com/code/marcosncosta/ai-vs-real-image-efficientnet-fine-tuning-86380e)).
-Every registered model is traceable back to **(git commit, DVC data version,
-MLflow run)** — that triple is what makes the pipeline reproducible.
+Training runs once externally on Kaggle
+([notebook](https://www.kaggle.com/code/marcosncosta/ai-vs-real-image-efficientnet-fine-tuning-86380e)).
 
 ---
 
 ## What Gets Tracked
 
-| Artifact | Where it lives | Linked to |
-|----------|----------------|-----------|
+| Artefact | Where | Linked to |
+|----------|-------|-----------|
 | Source code | Git | commit SHA |
-| Raw + processed images | DVC (DagsHub remote) | `.dvc` file committed to Git |
-| Trained EfficientNet weights (`.pt`) | DVC + MLflow artifact store | MLflow run ID |
-| Hyperparameters, metrics, plots | MLflow tracking server | MLflow run ID |
-| Exported `.onnx` model | MLflow artifact store | MLflow run ID |
-| Promoted models (Staging / Production) | MLflow model registry | model version |
-| CI runs (evaluate → register → export → docker) | GitHub Actions | workflow run |
-
----
-
-## Repo Structure
-
-```
-ai-image-detector/
-├── data/                     # DVC-tracked (not in Git)
-├── models/                   # DVC-tracked (not in Git)
-├── data.dvc                  # DVC pointer — pins dataset version
-├── models.dvc                # DVC pointer — pins model version
-├── src/
-│   ├── data/                 # dataset loading and preprocessing
-│   ├── models/               # model definition (EfficientNet-B0 backbone)
-│   ├── train.py              # training entrypoint (logs to MLflow)
-│   ├── evaluate.py           # evaluation script
-│   ├── export_onnx.py        # PyTorch → ONNX export
-│   └── predict.py            # single-image inference
-├── api/
-│   ├── main.py               # FastAPI app — /health, /predict, /predict-explain
-│   ├── model.py              # ONNX inference + PyTorch GradCAM
-│   ├── model.onnx            # exported model for fast inference
-│   ├── best_weights.pt       # PyTorch weights for GradCAM
-│   ├── schemas.py            # Pydantic response models
-│   ├── download_artifacts.py # pull model files from DagsHub S3 (dev use)
-│   ├── export_onnx.py        # re-export ONNX from .pt weights
-│   ├── requirements.txt
-│   ├── Dockerfile
-│   └── .env.example          # secrets template (only needed for re-downloading artifacts)
-├── ui/
-│   ├── server.js             # Express server — proxies /api/* → FastAPI, handles feedback
-│   ├── package.json
-│   ├── Dockerfile
-│   ├── public/
-│   │   ├── index.html        # single-page app
-│   │   ├── script.js         # upload, classify, GradCAM view modes, feedback
-│   │   └── styles.css        # design system
-│   └── feedback/
-│       ├── feedback.jsonl    # one JSON entry per user submission
-│       └── images/           # uploaded images saved with UUID filenames
-├── picture_samples/
-│   ├── fake/                 # 10 AI-generated test images
-│   └── real/                 # 10 real test images
-├── imgs/                     # screenshots and assets
-├── configs/
-│   └── train_config.yaml     # all hyperparameters in one place
-├── notebooks/                # exploratory analysis
-├── .github/workflows/        # GitHub Actions CI pipeline
-├── pitch_decks/              # course pitch-deck sources
-├── examples/                 # reference decks & presentations
-├── docker-compose.yml        # spins up API + UI with a single command
-├── .dockerignore
-├── env.yaml                  # conda environment
-└── README.md
-```
+| Dataset | DVC (DagsHub S3) | `.dvc` file in Git |
+| Model weights (`.pt`) | DVC + MLflow artefact store | MLflow run ID |
+| Hyperparameters + metrics | MLflow tracking server | MLflow run ID |
+| Exported model (`.onnx`) | MLflow artefact store | MLflow run ID |
+| Promoted models | MLflow model registry (Staging / Production) | model version |
+| CI runs | GitHub Actions | workflow run |
+| Benchmark sessions | SQLite (`ui/data/sessions.db`) | session UUID |
 
 ---
 
 ## Quickstart
 
-### Option A — Docker (recommended, no setup required)
+### Option A — Docker (recommended)
 
-> Requires [Docker Desktop](https://www.docker.com/products/docker-desktop/) to be running.
+> Requires [Docker Desktop](https://www.docker.com/products/docker-desktop/) running.
 
 ```bash
 git clone https://github.com/495temych/ai-image-detector.git
@@ -175,13 +153,13 @@ docker compose up --build
 
 Open **http://localhost:3000**
 
-That's it. The model weights are bundled in the image — no credentials or `.env` file needed.
+Model weights are bundled in the image — no credentials needed.
+The first build downloads dependencies (~300 MB) and takes 3–5 minutes.
+Subsequent builds use cached layers and take under 30 seconds.
 
 ---
 
 ### Option B — Local (Python + Node.js)
-
-#### 1. Clone and set up environment
 
 ```bash
 git clone https://github.com/495temych/ai-image-detector.git
@@ -190,90 +168,46 @@ conda env create -f env.yaml
 conda activate mlops-img
 ```
 
-#### 2. Pull the dataset via DVC
+**Start the API:**
 
 ```bash
-dvc pull
+uvicorn api.main:app --reload --port 8000
 ```
 
-> First-time setup — configure the DVC remote (see `docs/dvc_setup.md`).
-
-#### 3. Start the MLflow tracking server (local)
-
-```bash
-mlflow server --host 127.0.0.1 --port 5000
-```
-
-#### 4. Download trained model weights
-
-The EfficientNet model is trained externally on Kaggle
-([notebook](https://www.kaggle.com/code/marcosncosta/ai-vs-real-image-efficientnet-fine-tuning-86380e)).
-Download the resulting `.pt` file and place it at the path specified in
-`configs/eval_config.yaml` (default: `model/efficientnet.pt`).
-
-Then run evaluation (logs metrics and the weights to MLflow):
-
-```bash
-python src/evaluate.py --config configs/eval_config.yaml
-```
-
-All metrics, params, and artifacts are logged to MLflow. Open the UI at
-`http://127.0.0.1:5000`.
-
-#### 5. Export to ONNX
-
-```bash
-python src/export_onnx.py --run-id <mlflow_run_id>
-```
-
-#### 6. Start the FastAPI backend
-
-```bash
-uvicorn api.main:app --port 8000
-```
-
-Swagger UI → http://localhost:8000/docs
-
-#### 7. Start the web UI
-
-In a second terminal:
+**Start the UI (separate terminal):**
 
 ```bash
 cd ui
-npm install   # first time only
-npm start
+npm install     # first time only
+node server.js
 ```
 
 Open **http://localhost:3000**
 
-The UI health pill in the top-right corner turns green once the API is reachable.
-
 ---
 
-## API Endpoints
+## API Reference
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/health` | Status check |
-| `POST` | `/predict` | Classify image → label + confidence (ONNX, fast) |
-| `POST` | `/predict-explain` | Classify + GradCAM heatmap (PyTorch, ~1 s) |
-
-### Example requests
+| `GET`  | `/health` | Status check |
+| `POST` | `/predict` | ONNX inference → label + confidence (fast) |
+| `POST` | `/predict-explain` | ONNX inference + GradCAM heatmap (~1 s) |
 
 ```bash
-# health check
+# Health check
 curl http://localhost:8000/health
 
-# predict
+# Predict
 curl -X POST http://localhost:8000/predict \
-  -F "file=@picture_samples/fake/0001.jpg"
+  -F "file=@image_samples/fake/0001.jpg"
 
-# predict + GradCAM explanation
+# Predict + GradCAM
 curl -X POST http://localhost:8000/predict-explain \
-  -F "file=@picture_samples/real/0001.jpg"
+  -F "file=@image_samples/real/0001.jpg"
 ```
 
-### Response shapes
+**Response shapes:**
 
 ```json
 // GET /health
@@ -295,28 +229,71 @@ curl -X POST http://localhost:8000/predict-explain \
 }
 ```
 
-Render the GradCAM image in a browser:
-```html
-<img src="data:image/png;base64,{{ gradcam_base64 }}" />
-```
-
-The GradCAM PNG is a 224×224 blend of the original image (50%) and a JET-colormap heatmap (50%). Red regions indicate the highest model activation; blue regions the lowest.
+The GradCAM PNG is a 224×224 blend of the original image and a JET-colormap
+heatmap. Red = highest model activation, blue = lowest.
 
 ---
 
-## Tools (by stage)
+## Repo Structure
+
+```
+ai-image-detector/
+├── api/
+│   ├── main.py               # FastAPI app — /health, /predict, /predict-explain
+│   ├── model.py              # ONNX inference + PyTorch GradCAM
+│   ├── model.onnx            # exported model (fast inference)
+│   ├── best_weights.pt       # PyTorch weights (GradCAM backprop)
+│   ├── schemas.py            # Pydantic response models
+│   ├── requirements.txt
+│   └── Dockerfile
+├── ui/
+│   ├── server.js             # Express — proxies /api/*, serves challenge routes
+│   ├── db.js                 # SQLite module (sessions, session_results tables)
+│   ├── package.json
+│   ├── Dockerfile
+│   ├── public/
+│   │   ├── index.html        # Mode 1: Detector
+│   │   ├── script.js         # Upload, GradCAM viewer, feedback
+│   │   ├── benchmark.html    # Mode 2: Challenge game
+│   │   ├── benchmark.js      # Session flow, reveal, charts, insight cards
+│   │   └── styles.css
+│   ├── scripts/
+│   │   └── seed_db.js        # Seed 120 synthetic sessions on first run
+│   └── data/
+│       └── sessions.db       # SQLite — persists across restarts via Docker volume
+├── image_samples/
+│   ├── fake/                 # 100 AI-generated benchmark images
+│   └── real/                 # 100 real benchmark images
+├── src/
+│   ├── train.py              # Training entrypoint (logs to MLflow)
+│   ├── evaluate.py           # Evaluation script
+│   └── export_onnx.py        # PyTorch → ONNX export
+├── data/                     # DVC-tracked (not in Git)
+├── imgs/                     # Screenshots and assets for README
+├── configs/
+│   └── train_config.yaml     # Hyperparameters
+├── .github/workflows/        # GitHub Actions CI pipeline
+├── docker-compose.yml        # Spins up API + UI with one command
+├── env.yaml                  # Conda environment
+└── README.md
+```
+
+---
+
+## MLOps Tooling
 
 | Stage | Tool | Role |
 |-------|------|------|
-| Data & model versioning | DVC + Git | Pin dataset and model weights to a commit |
-| Training | PyTorch + Kaggle | Fine-tune EfficientNet on Kaggle GPU (external to CI) |
-| Experiment tracking | MLflow | Metrics, params, artifacts, model registry |
-| Explainability | PyTorch GradCAM | Visual attention heatmaps for predictions |
-| Portable inference | ONNX Runtime | Framework-agnostic exported model, fast `/predict` |
-| Automation / CI | GitHub Actions | Evaluate → register → export → docker on push to `main` |
-| Serving | FastAPI + Docker | Containerized REST endpoints |
-| Web UI | Node.js + Express | Interactive image upload + prediction + GradCAM viewer |
-| Deployment | Docker Compose | Single-command demo (API + UI) |
+| Data & model versioning | DVC + Git | Pin dataset and weights to every commit |
+| Training | PyTorch + Kaggle | Fine-tune EfficientNet on GPU (external to CI) |
+| Experiment tracking | MLflow (DagsHub) | Metrics, params, artefacts, model registry |
+| Explainability | PyTorch GradCAM | Visual attention heatmaps |
+| Portable inference | ONNX Runtime | Framework-agnostic model export |
+| CI/CD | GitHub Actions | Evaluate → register → export → Docker on push |
+| Serving | FastAPI | Containerised REST endpoints |
+| Web UI | Node.js + Express | Detector + Challenge game |
+| Session storage | SQLite | Persistent benchmark session database |
+| Deployment | Docker Compose | Single-command demo |
 | Remote storage | DagsHub | DVC remote + MLflow tracking server |
 
 ---
@@ -324,22 +301,29 @@ The GradCAM PNG is a 224×224 blend of the original image (50%) and a JET-colorm
 ## Dataset
 
 [AI Generated Images vs Real Images](https://www.kaggle.com/datasets/tristanzhang32/ai-generated-images-vs-real-images)
-Kaggle · `tristanzhang32` · Binary: `real` / `fake` · Used for academic purposes only.
+· Kaggle · `tristanzhang32` · 60,000 images · Binary: `real` / `fake`
+· Academic use only.
+
+**Splits stored in DagsHub S3:**
+
+```
+data/
+  train/v1_subset_5000/   5,000 images (used for training)
+  test/                  12,000 images (held-out evaluation)
+  benchmark/v1/           metadata.yaml — difficulty-scored index, no duplicates
+```
 
 ---
 
 ## MLflow
 
 Tracking server: https://dagshub.com/marcosncosta1/ai-image-detector.mlflow
-Champion model: `efficientnet-b0 @champion` · Run ID: `2561d86a3f22495e91b2cc7d3d1d3497`
+Champion run: `efficientnet_v1` · Run ID: `2561d86a3f22495e91b2cc7d3d1d3497`
 
 ---
 
 ## Team
 
-- Marcos
-- Artemii
-- Afshin
-- Jibin
+**Marcos Costa · Artemii Ponomarenko · Afshin Khosroshahi · Jibin Mathew Peechatt**
 
-ZHAW School of Engineering · Machine Learning and Data in Operation (Spring 2026)
+ZHAW School of Engineering · Machine Learning and Data in Operation · Spring 2026
