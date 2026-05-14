@@ -43,7 +43,10 @@ function sample(arr, n) {
 }
 
 function simulateAnswer(true_label, diff, isModel) {
-  const base = isModel ? 0.95 : 0.86;
+  // effective accuracy at avg difficulty 0.5 = base − 0.5×drop
+  // targets: model ≈ 89%  → base = 0.89 + 0.06 = 0.95
+  //          human ≈ 76%  → base = 0.76 + 0.11 = 0.87
+  const base = isModel ? 0.95 : 0.87;
   const drop = isModel ? 0.12 : 0.22;
   const correct = Math.random() < (base - diff * drop);
   return correct ? true_label : (true_label === 'fake' ? 'real' : 'fake');
