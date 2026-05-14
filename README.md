@@ -26,19 +26,13 @@ game that feeds a persistent session database.
 
 ### Mode 1 — Detector
 
-Upload any image and get an instant verdict with a visual explanation.
+Upload any image and get an instant verdict with a GradCAM visual explanation showing
+where in the image the model focused its attention.
 
 ![Detector — original vs GradCAM heatmap in compare mode](./imgs/UI-explain-preview.png)
 
-**What it shows:**
-- **Verdict card** — Real or AI-generated with an animated confidence gauge
-- **GradCAM viewer** — three modes:
-  - *Original* — the image as uploaded
-  - *Blend* — GradCAM heatmap overlaid via an opacity slider
-  - *Compare* — draggable vertical divider: original left, GradCAM right
-- **Model attention thumbnail** — a 224×224 crop of where the model focused
-- **JET colormap** — red = high activation, blue = low
-- **Feedback** — mark the prediction correct or wrong; logged for retraining
+Every prediction can be marked correct or wrong by the user and is logged to
+`ui/feedback/feedback.jsonl` for future retraining rounds.
 
 ---
 
@@ -46,51 +40,31 @@ Upload any image and get an instant verdict with a visual explanation.
 
 A 10-image human vs model benchmark game. No reveals until all 10 are answered.
 
-**How it works:**
-
-1. Ten images are drawn from the benchmark pool (5 real + 5 AI-generated, shuffled).
-   Model inference runs on all 10 in parallel at session start — results are cached
-   server-side so the reveal is instant.
-2. For each image the user picks **Real** or **AI-generated**, then advances.
-
 ![Challenge — choose Real or AI-generated for each image](./imgs/UI-choose.png)
 
-3. After image 10, the reveal screen shows:
+All model inference runs **in parallel at session start** — results are cached server-side
+so the reveal is instant after the 10th answer. Five real and five AI-generated images
+are drawn at random from the benchmark pool each round.
+
+After all 10 answers the reveal screen shows your score vs the model's score, a
+per-image breakdown with GradCAM for each decision, and **community stats aggregated
+across every session ever played:**
 
 ![Challenge — session summary with insight cards and community stats](./imgs/UI-session-summary.png)
 
-**Summary table**
+**Session persistence:** every completed round is written to a local SQLite database
+(`ui/data/sessions.db`) inside a single transaction. The database accumulates all
+sessions across restarts and serves live aggregate queries:
 
-| Row | What it means |
-|-----|---------------|
-| Your accuracy | Percentage of your 10 answers that were correct |
-| Model accuracy | Percentage of the model's 10 predictions that were correct |
-| Both fooled | Images where neither you nor the model got it right |
-| You beat the model | Images where you were right and the model was wrong |
-| Verdict | Who won this round |
-| Community average | Avg human and model accuracy across all stored sessions |
+- **Human vs model accuracy** per image across the full history
+- **Three insight cards** — hardest image (lowest community human accuracy), most
+  contested (closest to 50 %), and easiest — each recalculated from the running totals
+- **Community averages** shown in the summary table alongside your current-round score
+- **Trend chart** — human vs model accuracy across the last 20 sessions, illustrating
+  that human accuracy fluctuates while model accuracy stays stable
 
-**Three insight cards** — drawn from all previous sessions in the database:
-
-| Card | Logic |
-|------|-------|
-| 🔥 Hardest this session | Image with lowest human accuracy in community data |
-| ⚖️ Most contested | Image with community human accuracy closest to 50% |
-| ✅ Easiest this session | Image with highest human accuracy in community data |
-
-Each card shows a dynamic caption explaining *why* the image is notable
-(e.g. "Model sees it clearly, most humans don't" / "Model overconfident and wrong 34% of the time").
-
-**Session analytics chart** — line chart of human vs model accuracy across the last
-20 sessions, showing that human accuracy fluctuates while model accuracy stays stable.
-This is the baseline the retraining loop aims to close.
-
-**Per-image breakdown** — each of the 10 images with original thumbnail, GradCAM,
-your answer, model answer, confidence, and community stats (plays · human % · model %).
-
-**Session persistence:** every completed round is saved to a local SQLite database
-(`ui/data/sessions.db`). Community stats are computed live from all stored sessions.
-The database is seeded with 120 synthetic sessions to pre-populate the analytics.
+The database ships pre-seeded with 120 synthetic sessions (~76 % human / ~90 % model)
+so analytics are meaningful from the very first real play.
 
 ---
 
