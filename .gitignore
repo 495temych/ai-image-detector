@@ -11,9 +11,11 @@ venv/
 # Jupyter
 .ipynb_checkpoints/
 
-# Data — tracked by DVC, not Git
-data/raw/
-data/processed/
+# Data (DVC-managed)
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
 *.dvc/cache/
 /tmp/
 
@@ -34,7 +36,6 @@ api/samples/
 .env
 *.env
 
-
 # OS
 .DS_Store
 **/.DS_Store
@@ -43,3 +44,12 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+
+# Git worktrees
+.worktrees/
+
+# Runtime artifacts
+mlflow_run_id.txt
+labels.json
+/data
+/models

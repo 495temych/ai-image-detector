@@ -1,4 +1,4 @@
 [core]
-    remote = origin
-['remote "origin"']
-    url = https://dagshub.com/495temych/ai-image-detector.dvc
+    remote = dagshub
+['remote "dagshub"']
+    url = https://dagshub.com/marcosncosta1/ai-image-detector.dvc

@@ -1,9 +1,39 @@
 # AI Image Authenticity Detector
 
-Binary image classifier that detects whether an image is **AI-generated** or **real**.  
-Built as an end-to-end MLOps pipeline for the *Machine Learning and Data in Operation* course at ZHAW.
+Binary image classifier that flags whether an image is **AI-generated** or **real**.
+Built as an end-to-end **MLOps pipeline** for the *Machine Learning and Data in
+Operation* (TSM_MachLeData) course at ZHAW.
 
 **Model:** EfficientNet-B0 · Test acc: 89.6% · AUC: 96.2%
+
+---
+
+## Project Scope
+
+The deliverable of this project is the **pipeline**, not the model.
+Given an image → output `real` or `ai-generated` with a confidence score —
+produced by a workflow that is reproducible, tracked, automated, and deployable.
+
+**In scope**
+- Data versioning tied to every training run
+- Experiment tracking (metrics, params, artifacts) for every run
+- A model registry with clear promotion stages
+- Continuous integration that retrains, evaluates, and registers on every push
+- Packaged serving (REST + demo UI) behind a portable container
+
+**Not in scope**
+- Beating state-of-the-art accuracy on AI-vs-real detection
+- Building a novel model architecture — we fine-tune an off-the-shelf backbone
+
+---
+
+## Why This Project
+
+Generative image models have crossed the threshold of photorealism, which makes
+provenance-and-authenticity tooling increasingly useful (journalism, moderation,
+identity verification). A binary `real` / `ai-generated` classifier is a
+well-scoped, well-documented problem — which lets us spend our time on the
+*operations* layer instead of on task-specific research.
 
 ---
 
@@ -30,26 +60,49 @@ A Node.js frontend that lets you drag-and-drop any image and instantly see wheth
 ## Pipeline Overview
 
 ```
-Kaggle dataset
-     │
-     ▼
-  DVC (data versioning)
-     │
-     ▼
-  PyTorch training  ──→  MLflow (experiment tracking + model registry)
-     │
-     ▼
-  GitHub Actions (CI: train → evaluate → register on every push)
-     │
-     ▼
-  FastAPI (REST endpoints: /predict, /predict-explain)
-     │
-     ▼
+ Kaggle notebook (EfficientNet fine-tuning)   ← training happens here, externally
+      │
+      │  download trained .pt weights
+      ▼
+  DVC  ───────────────┐  (data + model versioning; each run pinned to a data hash)
+      │               │
+      ▼               │
+  Evaluate on         │
+  test split   ───────┼──▶ MLflow  (metrics, params, artifacts, model registry)
+      │               │
+      ▼               │
+  ONNX export ────────┘
+      │
+      ▼
+  GitHub Actions (CI: evaluate → register → export → docker, on push to main)
+      │
+      ▼
+  FastAPI + Docker (REST endpoints: /predict, /predict-explain)
+      │
+      ▼
   Node.js + Express (web UI on port 3000)
-     │
-     ▼
+      │
+      ▼
   Docker Compose (packages API + UI — one command to run)
 ```
+
+Training runs once externally on Kaggle ([notebook](https://www.kaggle.com/code/marcosncosta/ai-vs-real-image-efficientnet-fine-tuning-86380e)).
+Every registered model is traceable back to **(git commit, DVC data version,
+MLflow run)** — that triple is what makes the pipeline reproducible.
+
+---
+
+## What Gets Tracked
+
+| Artifact | Where it lives | Linked to |
+|----------|----------------|-----------|
+| Source code | Git | commit SHA |
+| Raw + processed images | DVC (DagsHub remote) | `.dvc` file committed to Git |
+| Trained EfficientNet weights (`.pt`) | DVC + MLflow artifact store | MLflow run ID |
+| Hyperparameters, metrics, plots | MLflow tracking server | MLflow run ID |
+| Exported `.onnx` model | MLflow artifact store | MLflow run ID |
+| Promoted models (Staging / Production) | MLflow model registry | model version |
+| CI runs (evaluate → register → export → docker) | GitHub Actions | workflow run |
 
 ---
 
@@ -57,6 +110,17 @@ Kaggle dataset
 
 ```
 ai-image-detector/
+├── data/                     # DVC-tracked (not in Git)
+├── models/                   # DVC-tracked (not in Git)
+├── data.dvc                  # DVC pointer — pins dataset version
+├── models.dvc                # DVC pointer — pins model version
+├── src/
+│   ├── data/                 # dataset loading and preprocessing
+│   ├── models/               # model definition (EfficientNet-B0 backbone)
+│   ├── train.py              # training entrypoint (logs to MLflow)
+│   ├── evaluate.py           # evaluation script
+│   ├── export_onnx.py        # PyTorch → ONNX export
+│   └── predict.py            # single-image inference
 ├── api/
 │   ├── main.py               # FastAPI app — /health, /predict, /predict-explain
 │   ├── model.py              # ONNX inference + PyTorch GradCAM
@@ -83,11 +147,15 @@ ai-image-detector/
 │   ├── fake/                 # 10 AI-generated test images
 │   └── real/                 # 10 real test images
 ├── imgs/                     # screenshots and assets
-├── data/
-│   └── dataset.yaml
+├── configs/
+│   └── train_config.yaml     # all hyperparameters in one place
+├── notebooks/                # exploratory analysis
+├── .github/workflows/        # GitHub Actions CI pipeline
+├── pitch_decks/              # course pitch-deck sources
+├── examples/                 # reference decks & presentations
 ├── docker-compose.yml        # spins up API + UI with a single command
 ├── .dockerignore
-├── env.yaml                  # conda environment (local dev)
+├── env.yaml                  # conda environment
 └── README.md
 ```
 
@@ -122,7 +190,43 @@ conda env create -f env.yaml
 conda activate mlops-img
 ```
 
-#### 2. Start the FastAPI backend
+#### 2. Pull the dataset via DVC
+
+```bash
+dvc pull
+```
+
+> First-time setup — configure the DVC remote (see `docs/dvc_setup.md`).
+
+#### 3. Start the MLflow tracking server (local)
+
+```bash
+mlflow server --host 127.0.0.1 --port 5000
+```
+
+#### 4. Download trained model weights
+
+The EfficientNet model is trained externally on Kaggle
+([notebook](https://www.kaggle.com/code/marcosncosta/ai-vs-real-image-efficientnet-fine-tuning-86380e)).
+Download the resulting `.pt` file and place it at the path specified in
+`configs/eval_config.yaml` (default: `model/efficientnet.pt`).
+
+Then run evaluation (logs metrics and the weights to MLflow):
+
+```bash
+python src/evaluate.py --config configs/eval_config.yaml
+```
+
+All metrics, params, and artifacts are logged to MLflow. Open the UI at
+`http://127.0.0.1:5000`.
+
+#### 5. Export to ONNX
+
+```bash
+python src/export_onnx.py --run-id <mlflow_run_id>
+```
+
+#### 6. Start the FastAPI backend
 
 ```bash
 uvicorn api.main:app --port 8000
@@ -130,7 +234,7 @@ uvicorn api.main:app --port 8000
 
 Swagger UI → http://localhost:8000/docs
 
-#### 3. Start the web UI
+#### 7. Start the web UI
 
 In a second terminal:
 
@@ -200,32 +304,33 @@ The GradCAM PNG is a 224×224 blend of the original image (50%) and a JET-colorm
 
 ---
 
-## Tools
+## Tools (by stage)
 
-| Tool | Role |
-|------|------|
-| PyTorch | EfficientNet-B0 fine-tuning + GradCAM |
-| ONNX Runtime | Fast inference in `/predict` |
-| FastAPI | REST API |
-| Node.js + Express | Web UI server |
-| Docker + Compose | Containerised deployment — single-command demo |
-| DVC | Data versioning |
-| MLflow | Experiment tracking + model registry |
-| GitHub Actions | CI pipeline |
-| DagsHub | Remote storage + MLflow tracking server |
+| Stage | Tool | Role |
+|-------|------|------|
+| Data & model versioning | DVC + Git | Pin dataset and model weights to a commit |
+| Training | PyTorch + Kaggle | Fine-tune EfficientNet on Kaggle GPU (external to CI) |
+| Experiment tracking | MLflow | Metrics, params, artifacts, model registry |
+| Explainability | PyTorch GradCAM | Visual attention heatmaps for predictions |
+| Portable inference | ONNX Runtime | Framework-agnostic exported model, fast `/predict` |
+| Automation / CI | GitHub Actions | Evaluate → register → export → docker on push to `main` |
+| Serving | FastAPI + Docker | Containerized REST endpoints |
+| Web UI | Node.js + Express | Interactive image upload + prediction + GradCAM viewer |
+| Deployment | Docker Compose | Single-command demo (API + UI) |
+| Remote storage | DagsHub | DVC remote + MLflow tracking server |
 
 ---
 
 ## Dataset
 
-[AI Generated Images vs Real Images](https://www.kaggle.com/datasets/tristanzhang32/ai-generated-images-vs-real-images)  
+[AI Generated Images vs Real Images](https://www.kaggle.com/datasets/tristanzhang32/ai-generated-images-vs-real-images)
 Kaggle · `tristanzhang32` · Binary: `real` / `fake` · Used for academic purposes only.
 
 ---
 
 ## MLflow
 
-Tracking server: https://dagshub.com/495temych/ai-image-detector.mlflow  
+Tracking server: https://dagshub.com/marcosncosta1/ai-image-detector.mlflow
 Champion model: `efficientnet-b0 @champion` · Run ID: `2561d86a3f22495e91b2cc7d3d1d3497`
 
 ---
@@ -237,4 +342,4 @@ Champion model: `efficientnet-b0 @champion` · Run ID: `2561d86a3f22495e91b2cc7d
 - Afshin
 - Jibin
 
-ZHAW School of Engineering · Machine Learning and Data in Operation
+ZHAW School of Engineering · Machine Learning and Data in Operation (Spring 2026)
