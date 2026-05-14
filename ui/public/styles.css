@@ -1401,41 +1401,59 @@ main {
   border-top: 1px solid var(--border);
 }
 
-/* ── Hardest image callout ── */
-.bm-hardest {
-  margin: 2rem 0 1rem;
-}
-
-.bm-hardest__inner {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem 1.25rem;
-  border-radius: 10px;
-  border: 1.5px solid color-mix(in srgb, var(--warn) 40%, transparent);
-  background: color-mix(in srgb, var(--warn) 6%, var(--surface));
-}
-
-.bm-hardest__label {
-  font-size: 0.8rem;
+/* ── Hero score line ── */
+#bm-hero { text-align: center; padding: 2rem 0 1.5rem; }
+.hero-score {
+  font-size: 2rem;
   font-weight: 600;
-  color: var(--warn);
-  white-space: nowrap;
-  min-width: 7rem;
-}
-
-.bm-hardest__thumb {
-  width: 72px;
-  height: 72px;
-  object-fit: cover;
-  border-radius: 6px;
-  flex-shrink: 0;
-}
-
-.bm-hardest__stats {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
+  gap: 1.5rem;
+  justify-content: center;
+  align-items: baseline;
+}
+.hero-vs { font-size: 1rem; color: var(--muted); font-weight: 400; }
+#hero-verdict { font-weight: 600; margin: 0.4rem 0 0.2rem; }
+#hero-vs-community { font-size: 0.875rem; color: var(--muted); }
+
+/* ── Insight cards row ── */
+.insight-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+.insight-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.ins-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+.ins-thumb {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+.ins-stats { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.ins-sub { font-size: 0.75rem; color: var(--muted); }
+
+/* Overconfident card — amber tint */
+#ins-overconfident {
+  border-color: var(--warn-border);
+  background: var(--warn-bg);
+}
+
+@media (max-width: 720px) {
+  .insight-row { grid-template-columns: 1fr; }
+  #bm-hero .hero-score { font-size: 1.4rem; gap: 0.75rem; }
 }
 
 /* ── Utilities ── */

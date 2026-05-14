@@ -103,7 +103,47 @@
   <section class="bm-screen" id="screen-reveal" hidden>
     <div class="bm-reveal">
 
-      <h2 class="bm-reveal__title">Session Results</h2>
+      <div id="bm-hero">
+        <div class="hero-score">
+          <span id="hero-you">—</span>
+          <span class="hero-vs">vs</span>
+          <span id="hero-model">—</span>
+        </div>
+        <p id="hero-verdict"></p>
+        <p id="hero-vs-community"></p>
+      </div>
+
+      <div class="insight-row" id="bm-insights">
+
+        <div class="insight-card" id="ins-hardest">
+          <div class="ins-label">🔥 Hardest this session</div>
+          <img class="ins-thumb" id="ins-hardest-img" alt="">
+          <div class="ins-stats">
+            <span class="comm-human" id="ins-hardest-human"></span>
+            <span class="comm-model" id="ins-hardest-model"></span>
+          </div>
+          <div class="ins-sub" id="ins-hardest-sub"></div>
+        </div>
+
+        <div class="insight-card" id="ins-easiest">
+          <div class="ins-label">✅ Easiest this session</div>
+          <img class="ins-thumb" id="ins-easiest-img" alt="">
+          <div class="ins-stats">
+            <span class="comm-human" id="ins-easiest-human"></span>
+            <span class="comm-model" id="ins-easiest-model"></span>
+          </div>
+        </div>
+
+        <div class="insight-card" id="ins-overconfident" hidden>
+          <div class="ins-label">⚠️ Model overconfident</div>
+          <img class="ins-thumb" id="ins-overconfident-img" alt="">
+          <div class="ins-stats">
+            <span class="comm-human" id="ins-overconfident-conf"></span>
+          </div>
+          <div class="ins-sub">High confidence · wrong answer</div>
+        </div>
+
+      </div>
 
       <table class="bm-summary">
         <tbody>
@@ -145,8 +185,6 @@
       <div class="bm-results" id="bm-results">
         <p class="bm-loading">Crunching results…</p>
       </div>
-
-      <div class="bm-hardest" id="bm-hardest" hidden></div>
 
       <button class="bm-restart-btn" id="btn-restart">Play again</button>
 

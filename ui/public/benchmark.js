@@ -17,7 +17,6 @@ const sumVerdict    = document.getElementById('sum-verdict');
 const sumGlobalHuman = document.getElementById('sum-global-human');
 const sumGlobalModel = document.getElementById('sum-global-model');
 const bmResults     = document.getElementById('bm-results');
-const bmHardest     = document.getElementById('bm-hardest');
 const apiDot        = document.getElementById('api-dot');
 const apiStatus     = document.getElementById('api-status');
 
@@ -126,7 +125,6 @@ async function submitAnswers() {
   sumVerdict.className      = '';
   sumGlobalHuman.textContent = '…';
   sumGlobalModel.textContent = '…';
-  bmHardest.hidden           = true;
   bmResults.innerHTML        = '<p class="bm-loading">Crunching results…</p>';
 
   try {
@@ -173,7 +171,60 @@ function renderReveal(data) {
     ? 'None'
     : `${nums.length} (${nums.map(n => `Image ${n}`).join(', ')})`;
 
-  // ── Session summary ──
+  // ── 1. Hero score line ──
+  document.getElementById('hero-you').textContent   = `You ${pct(summary.your_accuracy)}`;
+  document.getElementById('hero-model').textContent = `Model ${pct(summary.model_accuracy)}`;
+
+  const heroVerdict = document.getElementById('hero-verdict');
+  heroVerdict.textContent = summary.verdict;
+  heroVerdict.className   = summary.verdict.startsWith('You win')    ? 'verdict-win'
+                          : summary.verdict.startsWith('Model wins') ? 'verdict-loss'
+                          : 'verdict-tie';
+
+  if (global?.avg_human_acc_pct != null) {
+    const diff   = Math.round(summary.your_accuracy * 100) - global.avg_human_acc_pct;
+    const vsLine = diff > 0
+      ? `You scored ${diff}% above the community average of ${global.avg_human_acc_pct}%`
+      : diff < 0
+      ? `You scored ${Math.abs(diff)}% below the community average of ${global.avg_human_acc_pct}%`
+      : `You matched the community average of ${global.avg_human_acc_pct}%`;
+    document.getElementById('hero-vs-community').textContent = vsLine;
+  }
+
+  // ── 2. Insight cards ──
+  // Sort by community human accuracy — hardest (lowest) first
+  const withStats = results.filter(r => r.image_id && community[r.image_id]?.total_plays > 0);
+  if (withStats.length > 0) {
+    const sorted  = [...withStats].sort(
+      (a, b) => community[a.image_id].human_acc_pct - community[b.image_id].human_acc_pct
+    );
+    const hardest = sorted[0];
+    const easiest = sorted[sorted.length - 1];
+
+    document.getElementById('ins-hardest-img').src           = `/challenge/image/${hardest.image_id}`;
+    document.getElementById('ins-hardest-human').textContent = `Humans ${community[hardest.image_id].human_acc_pct}%`;
+    document.getElementById('ins-hardest-model').textContent = `Model ${community[hardest.image_id].model_acc_pct}%`;
+    document.getElementById('ins-hardest-sub').textContent   =
+      `Fools ${community[hardest.image_id].human_confusion_pct}% of players`;
+
+    document.getElementById('ins-easiest-img').src           = `/challenge/image/${easiest.image_id}`;
+    document.getElementById('ins-easiest-human').textContent = `Humans ${community[easiest.image_id].human_acc_pct}%`;
+    document.getElementById('ins-easiest-model').textContent = `Model ${community[easiest.image_id].model_acc_pct}%`;
+  }
+
+  // Overconfident model — wrong AND confidence > 75%
+  const overconfident = results.find(r => !r.model_correct && r.model_confidence > 0.75);
+  const insOverconfident = document.getElementById('ins-overconfident');
+  if (overconfident) {
+    insOverconfident.hidden = false;
+    document.getElementById('ins-overconfident-img').src          = `/challenge/image/${overconfident.image_id}`;
+    document.getElementById('ins-overconfident-conf').textContent =
+      `${Math.round(overconfident.model_confidence * 100)}% confident · wrong`;
+  } else {
+    insOverconfident.hidden = true;
+  }
+
+  // ── 3. Summary table ──
   sumYourAcc.textContent    = pct(summary.your_accuracy);
   sumModelAcc.textContent   = pct(summary.model_accuracy);
   sumBothFooled.textContent = imageList(summary.both_fooled);
@@ -186,7 +237,6 @@ function renderReveal(data) {
                          : summary.verdict.startsWith('Model wins') ? 'verdict-loss'
                          : 'verdict-tie';
 
-  // ── Global / community averages ──
   if (global) {
     sumGlobalHuman.textContent = `${global.avg_human_acc_pct ?? '—'}%`;
     sumGlobalModel.textContent = `${global.avg_model_acc_pct ?? '—'}%`;
@@ -195,7 +245,7 @@ function renderReveal(data) {
     sumGlobalModel.textContent = '—';
   }
 
-  // ── Per-image cards (full GradCAM view) ──
+  // ── 4. Per-image cards (full GradCAM view) ──
   bmResults.innerHTML = '';
 
   const tick  = `<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3 3L11 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -252,25 +302,4 @@ function renderReveal(data) {
       </div>`;
     bmResults.appendChild(card);
   });
-
-  // ── Hardest image callout ──
-  const hardestId = data.hardest_image_id;
-  if (hardestId && community[hardestId]) {
-    const s = community[hardestId];
-    const hardestItem = results.find(r => r.image_id === hardestId);
-    bmHardest.hidden = false;
-    bmHardest.innerHTML = `
-      <div class="bm-hardest__inner">
-        <div class="bm-hardest__label">🔥 Hardest image this session</div>
-        ${hardestItem ? `<img class="bm-hardest__thumb" src="${hardestItem.src}" alt="Hardest image">` : ''}
-        <div class="bm-hardest__stats">
-          <span class="comm-plays">${s.total_plays} plays</span>
-          <span class="comm-human">Humans ${s.human_acc_pct}%</span>
-          <span class="comm-model">Model ${s.model_acc_pct}%</span>
-          <span class="comm-confusion">Fools ${s.human_confusion_pct}% of humans</span>
-        </div>
-      </div>`;
-  } else {
-    bmHardest.hidden = true;
-  }
 }
