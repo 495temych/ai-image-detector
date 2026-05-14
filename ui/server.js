@@ -4,7 +4,10 @@ const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 const fs = require('fs');
-const { saveSession, getImageStatsMany, getGlobalStats } = require('./db');
+const {
+  saveSession, getImageStatsMany, getGlobalStats,
+  getRecentSessions, getImageExtendedMany,
+} = require('./db');
 
 const app = express();
 const PORT = 3000;
@@ -181,7 +184,9 @@ app.post('/challenge/submit', express.json(), (req, res) => {
 
   // ── Community + global stats (queried after save so this session is counted) ──
   const community = getImageStatsMany(results.map(r => r.image_id));
+  const extended  = getImageExtendedMany(results.map(r => r.image_id));
   const global    = getGlobalStats();
+  const trend     = getRecentSessions(20);
 
   // Find hardest image in this session by community human confusion rate
   const hardest = results.reduce((worst, r) => {
@@ -211,7 +216,7 @@ app.post('/challenge/submit', express.json(), (req, res) => {
   }
 
   sessions.delete(session_id); // single-use
-  res.json({ session_id, results, summary, community, global, hardest_image_id: hardest?.image_id });
+  res.json({ session_id, results, summary, community, extended, global, trend, hardest_image_id: hardest?.image_id });
 });
 
 app.listen(PORT, () => {

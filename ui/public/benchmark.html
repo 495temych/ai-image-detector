@@ -103,86 +103,79 @@
   <section class="bm-screen" id="screen-reveal" hidden>
     <div class="bm-reveal">
 
-      <div id="bm-hero">
-        <div class="hero-score">
-          <span id="hero-you">—</span>
-          <span class="hero-vs">vs</span>
-          <span id="hero-model">—</span>
-        </div>
-        <p id="hero-verdict"></p>
-        <p id="hero-vs-community"></p>
+      <!-- 1. Hero score line — populated by renderHero() -->
+      <div id="bm-hero"></div>
+
+      <!-- 2. Insight cards — populated by renderInsightCards() -->
+      <div id="bm-insight-row"></div>
+
+      <!-- 3. Summary table -->
+      <div id="bm-summary-wrap">
+        <table class="bm-summary">
+          <tbody>
+            <tr>
+              <th>Your accuracy</th>
+              <td id="sum-your-acc">—</td>
+            </tr>
+            <tr>
+              <th>Model accuracy</th>
+              <td id="sum-model-acc">—</td>
+            </tr>
+            <tr>
+              <th>Both fooled by the same image</th>
+              <td id="sum-both-fooled">—</td>
+            </tr>
+            <tr>
+              <th>You beat the model on</th>
+              <td id="sum-you-beat">—</td>
+            </tr>
+            <!-- TODO: region IoU row -->
+            <tr class="bm-summary__verdict-row">
+              <th>Verdict</th>
+              <td id="sum-verdict">—</td>
+            </tr>
+            <tr class="bm-summary__separator">
+              <td colspan="2">Community average (all sessions)</td>
+            </tr>
+            <tr>
+              <th>Avg human accuracy</th>
+              <td id="sum-global-human">—</td>
+            </tr>
+            <tr>
+              <th>Avg model accuracy</th>
+              <td id="sum-global-model">—</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
-      <div class="insight-row" id="bm-insights">
-
-        <div class="insight-card" id="ins-hardest">
-          <div class="ins-label">🔥 Hardest this session</div>
-          <img class="ins-thumb" id="ins-hardest-img" alt="">
-          <div class="ins-stats">
-            <span class="comm-human" id="ins-hardest-human"></span>
-            <span class="comm-model" id="ins-hardest-model"></span>
+      <!-- 4. Analytics chart — shown after data loads -->
+      <div id="bm-analytics" hidden>
+        <p class="section-kicker">SESSION ANALYTICS</p>
+        <div class="chart-card">
+          <p class="chart-title">Human vs model accuracy — last 20 sessions</p>
+          <p class="chart-sub">
+            Each point is one completed game session, ordered by time.
+            Human accuracy varies round to round; model accuracy stays stable —
+            this is the baseline the retraining loop aims to close.
+          </p>
+          <div class="chart-legend">
+            <span class="leg-item"><span class="leg-sq" style="background:#378ADD"></span>Your accuracy (humans)</span>
+            <span class="leg-item"><span class="leg-sq leg-sq--dashed" style="border-color:#1D9E75"></span>Model accuracy</span>
+            <span class="leg-item"><span class="leg-sq" style="background:rgba(226,75,74,.35)"></span>Community avg</span>
           </div>
-          <div class="ins-sub" id="ins-hardest-sub"></div>
-        </div>
-
-        <div class="insight-card" id="ins-easiest">
-          <div class="ins-label">✅ Easiest this session</div>
-          <img class="ins-thumb" id="ins-easiest-img" alt="">
-          <div class="ins-stats">
-            <span class="comm-human" id="ins-easiest-human"></span>
-            <span class="comm-model" id="ins-easiest-model"></span>
+          <div style="position:relative;width:100%;height:220px">
+            <canvas id="bm-trend-chart"
+              role="img"
+              aria-label="Line chart comparing human and model accuracy across recent sessions">
+              Human accuracy fluctuates around 76%, model stays near 90%.
+            </canvas>
           </div>
         </div>
-
-        <div class="insight-card" id="ins-overconfident" hidden>
-          <div class="ins-label">⚠️ Model overconfident</div>
-          <img class="ins-thumb" id="ins-overconfident-img" alt="">
-          <div class="ins-stats">
-            <span class="comm-human" id="ins-overconfident-conf"></span>
-          </div>
-          <div class="ins-sub">High confidence · wrong answer</div>
-        </div>
-
       </div>
 
-      <table class="bm-summary">
-        <tbody>
-          <tr>
-            <th>Your accuracy</th>
-            <td id="sum-your-acc">—</td>
-          </tr>
-          <tr>
-            <th>Model accuracy</th>
-            <td id="sum-model-acc">—</td>
-          </tr>
-          <tr>
-            <th>Both fooled by the same image</th>
-            <td id="sum-both-fooled">—</td>
-          </tr>
-          <tr>
-            <th>You beat the model on</th>
-            <td id="sum-you-beat">—</td>
-          </tr>
-          <!-- TODO: region IoU row -->
-          <tr class="bm-summary__verdict-row">
-            <th>Verdict</th>
-            <td id="sum-verdict">—</td>
-          </tr>
-          <tr class="bm-summary__separator">
-            <td colspan="2">Community average (all sessions)</td>
-          </tr>
-          <tr>
-            <th>Avg human accuracy</th>
-            <td id="sum-global-human">—</td>
-          </tr>
-          <tr>
-            <th>Avg model accuracy</th>
-            <td id="sum-global-model">—</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <div class="bm-results" id="bm-results">
+      <!-- 5. Per-image cards — populated by renderPerImageCards() -->
+      <div id="bm-cards">
         <p class="bm-loading">Crunching results…</p>
       </div>
 
@@ -201,6 +194,7 @@
   <span>ZHAW MLOps Spring 2026</span>
 </footer>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="benchmark.js"></script>
 </body>
 </html>

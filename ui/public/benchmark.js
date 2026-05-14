@@ -9,16 +9,16 @@ const btnFake       = document.getElementById('btn-fake');
 const gameImg       = document.getElementById('game-img');
 const progressFill  = document.getElementById('progress-fill');
 const progressLabel = document.getElementById('progress-label');
-const sumYourAcc    = document.getElementById('sum-your-acc');
-const sumModelAcc   = document.getElementById('sum-model-acc');
-const sumBothFooled = document.getElementById('sum-both-fooled');
-const sumYouBeat    = document.getElementById('sum-you-beat');
-const sumVerdict    = document.getElementById('sum-verdict');
+const sumYourAcc     = document.getElementById('sum-your-acc');
+const sumModelAcc    = document.getElementById('sum-model-acc');
+const sumBothFooled  = document.getElementById('sum-both-fooled');
+const sumYouBeat     = document.getElementById('sum-you-beat');
+const sumVerdict     = document.getElementById('sum-verdict');
 const sumGlobalHuman = document.getElementById('sum-global-human');
 const sumGlobalModel = document.getElementById('sum-global-model');
-const bmResults     = document.getElementById('bm-results');
-const apiDot        = document.getElementById('api-dot');
-const apiStatus     = document.getElementById('api-status');
+const bmCards        = document.getElementById('bm-cards');
+const apiDot         = document.getElementById('api-dot');
+const apiStatus      = document.getElementById('api-status');
 
 // ── State ──
 let session    = null;   // { session_id, images: [{id, src}] }
@@ -117,15 +117,20 @@ btnFake.addEventListener('click', () => recordAnswer('fake'));
 // ── Submit ──
 async function submitAnswers() {
   showScreen('screen-reveal');
-  sumYourAcc.textContent    = '…';
-  sumModelAcc.textContent   = '…';
-  sumBothFooled.textContent = '…';
-  sumYouBeat.textContent    = '…';
-  sumVerdict.textContent    = '…';
-  sumVerdict.className      = '';
+  // Reset summary table cells
+  sumYourAcc.textContent     = '…';
+  sumModelAcc.textContent    = '…';
+  sumBothFooled.textContent  = '…';
+  sumYouBeat.textContent     = '…';
+  sumVerdict.textContent     = '…';
+  sumVerdict.className       = '';
   sumGlobalHuman.textContent = '…';
   sumGlobalModel.textContent = '…';
-  bmResults.innerHTML        = '<p class="bm-loading">Crunching results…</p>';
+  // Clear dynamically-rendered sections
+  document.getElementById('bm-hero').innerHTML        = '';
+  document.getElementById('bm-insight-row').innerHTML = '';
+  document.getElementById('bm-analytics').hidden      = true;
+  bmCards.innerHTML = '<p class="bm-loading">Crunching results…</p>';
 
   try {
     const r = await fetch('/challenge/submit', {
@@ -136,7 +141,7 @@ async function submitAnswers() {
     if (!r.ok) throw new Error(`Server error ${r.status}`);
     renderReveal(await r.json());
   } catch (err) {
-    bmResults.innerHTML = `<p class="bm-error">Error loading results: ${err.message}</p>`;
+    bmCards.innerHTML = `<p class="bm-error">Error loading results: ${err.message}</p>`;
   }
 }
 
@@ -144,7 +149,6 @@ async function submitAnswers() {
 function computeSummary(results) {
   const yourAcc  = results.filter(r => r.human_correct).length / results.length;
   const modelAcc = results.filter(r => r.model_correct).length / results.length;
-  // image_num is 1-based from the new server; fall back to index+1 for old server
   const num = r => r.image_num ?? (r.id + 1);
   return {
     your_accuracy:  yourAcc,
@@ -157,74 +161,126 @@ function computeSummary(results) {
   };
 }
 
-// ── Reveal ──
-function renderReveal(data) {
-  const { results } = data;
-  const community = data.community ?? {};
-  const global    = data.global    ?? null;
+// ── 1. Hero ──
+function renderHero(summary, global) {
+  const you   = Math.round(summary.your_accuracy * 100);
+  const model = Math.round(summary.model_accuracy * 100);
+  const diff  = global?.avg_human_acc_pct != null
+    ? you - global.avg_human_acc_pct
+    : null;
 
-  // Use server-computed summary if present; compute client-side otherwise
-  const summary = data.summary ?? computeSummary(results);
+  const verdictEmoji = you > model ? '🏆' : you === model ? '🤝' : '🤖';
+  const verdictClass = summary.verdict.startsWith('You win')    ? 'verdict-win'
+                     : summary.verdict.startsWith('Model wins') ? 'verdict-loss'
+                     : 'verdict-tie';
 
+  const communityLine = diff === null ? ''
+    : diff > 0
+      ? `You scored ${diff}% above the community average of ${global.avg_human_acc_pct}% — nice round`
+    : diff < 0
+      ? `You scored ${Math.abs(diff)}% below the community average of ${global.avg_human_acc_pct}% — try again`
+    : `You matched the community average of ${global.avg_human_acc_pct}% exactly`;
+
+  document.getElementById('bm-hero').innerHTML = `
+    <div class="hero-score">
+      <span class="you">You ${you}%</span>
+      <span class="vs">vs</span>
+      <span class="mdl">Model ${model}%</span>
+    </div>
+    <p class="hero-verdict ${verdictClass}">${verdictEmoji} ${summary.verdict}</p>
+    ${communityLine ? `<p class="hero-community">${communityLine}</p>` : ''}
+  `;
+}
+
+// ── 2. Insight cards ──
+function pickCaption(stats, userCorrect) {
+  if (!stats || stats.total_plays < 5)
+    return {
+      main:    `Only ${stats?.total_plays ?? 0} plays so far`,
+      explain: 'Stats will stabilise as more players see this image',
+    };
+  if (stats.model_acc_pct < 55 && stats.human_acc_pct < 55)
+    return {
+      main:    `Stumps everyone — humans ${stats.human_acc_pct}%, model ${stats.model_acc_pct}%`,
+      explain: 'Both humans and the model struggle here — prime retraining candidate',
+    };
+  if (stats.model_acc_pct > 85 && stats.human_acc_pct < 45)
+    return {
+      main:    `Model sees it clearly, most humans don't`,
+      explain: 'The model found a pattern humans miss — check the GradCAM below',
+    };
+  if (stats.human_acc_pct > 85 && stats.model_acc_pct < 60)
+    return {
+      main:    `Humans outperform the model on this one`,
+      explain: 'A case where human intuition beats the algorithm',
+    };
+  if (stats.overconf_rate > 30)
+    return {
+      main:    `Model is overconfident and wrong ${stats.overconf_rate}% of the time`,
+      explain: 'High confidence + wrong answer — the most dangerous failure mode',
+    };
+  if (userCorrect && stats.human_acc_pct < 40)
+    return {
+      main:    `You spotted it — only ${stats.human_acc_pct}% of players do`,
+      explain: 'Above-average catch — this image fools most people',
+    };
+  if (!userCorrect && stats.human_acc_pct > 75)
+    return {
+      main:    `${stats.human_acc_pct}% of players got this — a well-known tell`,
+      explain: 'Most players identify this correctly — you can too next round',
+    };
+  return {
+    main:    `${stats.human_acc_pct}% human accuracy across ${stats.total_plays} plays`,
+    explain: stats.model_acc_pct > stats.human_acc_pct
+      ? 'Model has the edge on this image'
+      : 'Humans and model are roughly matched here',
+  };
+}
+
+function renderInsightCards(results, extended, community) {
+  const withStats = results.map(r => ({
+    ...r,
+    s:  extended[r.image_id],
+    cs: community[r.image_id],
+  }));
+
+  const hardest   = [...withStats].sort((a, b) =>
+    (a.cs?.human_acc_pct ?? 100) - (b.cs?.human_acc_pct ?? 100))[0];
+  const easiest   = [...withStats].sort((a, b) =>
+    (b.cs?.human_acc_pct ?? 0)   - (a.cs?.human_acc_pct ?? 0))[0];
+  const contested = [...withStats].sort((a, b) =>
+    Math.abs(50 - (a.cs?.human_acc_pct ?? 100)) -
+    Math.abs(50 - (b.cs?.human_acc_pct ?? 100)))[0];
+
+  const slots = [
+    { emoji: '🔥', label: 'HARDEST THIS SESSION',  r: hardest },
+    { emoji: '⚖️', label: 'MOST CONTESTED',         r: contested },
+    { emoji: '✅', label: 'EASIEST THIS SESSION',   r: easiest },
+  ];
+
+  document.getElementById('bm-insight-row').innerHTML = slots.map(({ emoji, label, r }) => {
+    const { main, explain } = pickCaption(r.s, r.human_correct);
+    return `
+      <div class="insight-card">
+        <p class="ins-label">${emoji} ${label}</p>
+        <img class="ins-thumb" src="/challenge/image/${r.image_id}" alt="">
+        <div class="ins-pills">
+          <span class="comm-human">Humans ${r.cs?.human_acc_pct ?? '—'}%</span>
+          <span class="comm-model">Model ${r.cs?.model_acc_pct ?? '—'}%</span>
+        </div>
+        <p class="ins-caption">${main}</p>
+        <p class="ins-explain">${explain}</p>
+      </div>`;
+  }).join('');
+}
+
+// ── 3. Summary table ──
+function renderSummaryTable(summary, global) {
   const pct       = v => `${Math.round(v * 100)}%`;
   const imageList = nums => nums.length === 0
     ? 'None'
     : `${nums.length} (${nums.map(n => `Image ${n}`).join(', ')})`;
 
-  // ── 1. Hero score line ──
-  document.getElementById('hero-you').textContent   = `You ${pct(summary.your_accuracy)}`;
-  document.getElementById('hero-model').textContent = `Model ${pct(summary.model_accuracy)}`;
-
-  const heroVerdict = document.getElementById('hero-verdict');
-  heroVerdict.textContent = summary.verdict;
-  heroVerdict.className   = summary.verdict.startsWith('You win')    ? 'verdict-win'
-                          : summary.verdict.startsWith('Model wins') ? 'verdict-loss'
-                          : 'verdict-tie';
-
-  if (global?.avg_human_acc_pct != null) {
-    const diff   = Math.round(summary.your_accuracy * 100) - global.avg_human_acc_pct;
-    const vsLine = diff > 0
-      ? `You scored ${diff}% above the community average of ${global.avg_human_acc_pct}%`
-      : diff < 0
-      ? `You scored ${Math.abs(diff)}% below the community average of ${global.avg_human_acc_pct}%`
-      : `You matched the community average of ${global.avg_human_acc_pct}%`;
-    document.getElementById('hero-vs-community').textContent = vsLine;
-  }
-
-  // ── 2. Insight cards ──
-  // Sort by community human accuracy — hardest (lowest) first
-  const withStats = results.filter(r => r.image_id && community[r.image_id]?.total_plays > 0);
-  if (withStats.length > 0) {
-    const sorted  = [...withStats].sort(
-      (a, b) => community[a.image_id].human_acc_pct - community[b.image_id].human_acc_pct
-    );
-    const hardest = sorted[0];
-    const easiest = sorted[sorted.length - 1];
-
-    document.getElementById('ins-hardest-img').src           = `/challenge/image/${hardest.image_id}`;
-    document.getElementById('ins-hardest-human').textContent = `Humans ${community[hardest.image_id].human_acc_pct}%`;
-    document.getElementById('ins-hardest-model').textContent = `Model ${community[hardest.image_id].model_acc_pct}%`;
-    document.getElementById('ins-hardest-sub').textContent   =
-      `Fools ${community[hardest.image_id].human_confusion_pct}% of players`;
-
-    document.getElementById('ins-easiest-img').src           = `/challenge/image/${easiest.image_id}`;
-    document.getElementById('ins-easiest-human').textContent = `Humans ${community[easiest.image_id].human_acc_pct}%`;
-    document.getElementById('ins-easiest-model').textContent = `Model ${community[easiest.image_id].model_acc_pct}%`;
-  }
-
-  // Overconfident model — wrong AND confidence > 75%
-  const overconfident = results.find(r => !r.model_correct && r.model_confidence > 0.75);
-  const insOverconfident = document.getElementById('ins-overconfident');
-  if (overconfident) {
-    insOverconfident.hidden = false;
-    document.getElementById('ins-overconfident-img').src          = `/challenge/image/${overconfident.image_id}`;
-    document.getElementById('ins-overconfident-conf').textContent =
-      `${Math.round(overconfident.model_confidence * 100)}% confident · wrong`;
-  } else {
-    insOverconfident.hidden = true;
-  }
-
-  // ── 3. Summary table ──
   sumYourAcc.textContent    = pct(summary.your_accuracy);
   sumModelAcc.textContent   = pct(summary.model_accuracy);
   sumBothFooled.textContent = imageList(summary.both_fooled);
@@ -244,12 +300,74 @@ function renderReveal(data) {
     sumGlobalHuman.textContent = '—';
     sumGlobalModel.textContent = '—';
   }
+}
 
-  // ── 4. Per-image cards (full GradCAM view) ──
-  bmResults.innerHTML = '';
+// ── 4. Trend chart ──
+function renderChart(trend) {
+  const el = document.getElementById('bm-trend-chart');
+  if (!el || !trend?.length) return;
 
-  const tick  = `<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3 3L11 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-  const cross = `<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 2l9 9M11 2L2 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+  // Destroy previous instance if re-rendering
+  if (typeof Chart !== 'undefined') Chart.getChart(el)?.destroy();
+  else return; // Chart.js not yet loaded
+
+  const avgHuman = Math.round(
+    trend.reduce((s, r) => s + r.human_score / r.total * 100, 0) / trend.length
+  );
+
+  new Chart(el, {
+    type: 'line',
+    data: {
+      labels: trend.map((_, i) => `S${i + 1}`),
+      datasets: [
+        {
+          label:           'Human accuracy',
+          data:            trend.map(s => Math.round(s.human_score / s.total * 100)),
+          borderColor:     '#378ADD',
+          backgroundColor: 'rgba(55,138,221,.08)',
+          tension: 0.35, pointRadius: 3, fill: true,
+        },
+        {
+          label:           'Model accuracy',
+          data:            trend.map(s => Math.round(s.model_score / s.total * 100)),
+          borderColor:     '#1D9E75',
+          backgroundColor: 'rgba(29,158,117,.06)',
+          tension: 0.35, pointRadius: 3, fill: true, borderDash: [5, 3],
+        },
+        {
+          label:       'Community avg',
+          data:        trend.map(() => avgHuman),
+          borderColor: 'rgba(226,75,74,.4)',
+          borderDash:  [2, 4], pointRadius: 0, fill: false,
+        },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: {
+          min: 0, max: 100,
+          ticks: { callback: v => v + '%', font: { size: 11 } },
+          grid:  { color: 'rgba(128,128,128,.1)' },
+        },
+        x: {
+          ticks: { font: { size: 10 }, autoSkip: true, maxTicksLimit: 10 },
+          grid:  { display: false },
+        },
+      },
+    },
+  });
+
+  document.getElementById('bm-analytics').hidden = false;
+}
+
+// ── 5. Per-image cards ──
+function renderPerImageCards(results, community) {
+  bmCards.innerHTML = '';
+
+  const tick      = `<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3 3L11 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  const cross     = `<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 2l9 9M11 2L2 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
   const labelText = l => l === 'real' ? 'Real' : 'AI-generated';
 
   results.forEach((item, i) => {
@@ -300,6 +418,20 @@ function renderReveal(data) {
         <div class="bm-card__status bm-card__status--${status}">${statusLabel}</div>
         ${communityBar}
       </div>`;
-    bmResults.appendChild(card);
+    bmCards.appendChild(card);
   });
+}
+
+// ── Reveal coordinator ──
+function renderReveal(data) {
+  const summary   = data.summary   ?? computeSummary(data.results);
+  const community = data.community ?? {};
+  const extended  = data.extended  ?? {};
+  const global    = data.global    ?? null;
+
+  renderHero(summary, global);
+  renderInsightCards(data.results, extended, community);
+  renderSummaryTable(summary, global);
+  renderChart(data.trend);
+  renderPerImageCards(data.results, community);
 }

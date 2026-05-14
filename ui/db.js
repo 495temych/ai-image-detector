@@ -114,4 +114,29 @@ function getGlobalStats() {
   return _globalStats.get();
 }
 
-module.exports = { saveSession, getImageStats, getImageStatsMany, getGlobalStats };
+const _recentSessions = db.prepare(`
+  SELECT human_score, model_score, total, played_at
+  FROM sessions ORDER BY played_at ASC LIMIT ?
+`);
+function getRecentSessions(n = 20) { return _recentSessions.all(n); }
+
+const _imageExtended = db.prepare(`
+  SELECT
+    COUNT(*)                                                            AS total_plays,
+    ROUND(AVG(human_correct) * 100)                                     AS human_acc_pct,
+    ROUND(AVG(model_correct) * 100)                                     AS model_acc_pct,
+    ROUND(AVG(model_conf) * 100)                                        AS avg_conf_pct,
+    ROUND(AVG(CASE WHEN model_correct=0 AND model_conf>0.75
+                   THEN 1.0 ELSE 0 END) * 100)                         AS overconf_rate
+  FROM session_results WHERE image_id = ?
+`);
+function getImageExtendedMany(ids) {
+  const out = {};
+  for (const id of ids) out[id] = _imageExtended.get(id);
+  return out;
+}
+
+module.exports = {
+  saveSession, getImageStats, getImageStatsMany, getGlobalStats,
+  getRecentSessions, getImageExtendedMany,
+};
