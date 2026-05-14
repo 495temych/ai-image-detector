@@ -44,10 +44,28 @@ function showScreen(id) {
 
 // ── Start ──
 btnStart.addEventListener('click', startSession);
-btnRestart.addEventListener('click', () => showScreen('screen-start'));
+
+btnRestart.addEventListener('click', () => {
+  // Destroy the chart so it doesn't error on next render
+  const canvas = document.getElementById('bm-trend-chart');
+  if (canvas && typeof Chart !== 'undefined') Chart.getChart(canvas)?.destroy();
+
+  // Clear dynamically-rendered sections so stale content doesn't flash
+  document.getElementById('bm-hero').innerHTML        = '';
+  document.getElementById('bm-insight-row').innerHTML = '';
+  document.getElementById('bm-cards').innerHTML       = '';
+  document.getElementById('bm-analytics').hidden      = true;
+
+  // Clear session state
+  session    = null;
+  answers    = [];
+  currentIdx = 0;
+
+  showScreen('screen-start');
+});
 
 async function startSession() {
-  btnStart.disabled = true;
+  btnStart.disabled    = true;
   btnStart.textContent = 'Loading…';
   try {
     const r = await fetch('/challenge/session');
@@ -55,12 +73,16 @@ async function startSession() {
     session    = await r.json();
     answers    = [];
     currentIdx = 0;
+    // Reset progress bar to 0 before first image
+    progressFill.style.width  = '0%';
+    progressLabel.textContent = `1 / ${session.images.length}`;
     showScreen('screen-play');
     loadImage(currentIdx);
   } catch (err) {
-    btnStart.disabled = false;
-    btnStart.textContent = 'Start Challenge';
     alert(`Could not start: ${err.message}\n\nMake sure the API is running.`);
+  } finally {
+    btnStart.disabled    = false;
+    btnStart.textContent = 'Start Challenge';
   }
 }
 
@@ -244,19 +266,31 @@ function renderInsightCards(results, extended, community) {
     cs: community[r.image_id],
   }));
 
-  const hardest   = [...withStats].sort((a, b) =>
-    (a.cs?.human_acc_pct ?? 100) - (b.cs?.human_acc_pct ?? 100))[0];
-  const easiest   = [...withStats].sort((a, b) =>
-    (b.cs?.human_acc_pct ?? 0)   - (a.cs?.human_acc_pct ?? 0))[0];
-  const contested = [...withStats].sort((a, b) =>
-    Math.abs(50 - (a.cs?.human_acc_pct ?? 100)) -
-    Math.abs(50 - (b.cs?.human_acc_pct ?? 100)))[0];
+  // Sort all images by human accuracy (ascending)
+  const sorted  = [...withStats].sort((a, b) =>
+    (a.cs?.human_acc_pct ?? 100) - (b.cs?.human_acc_pct ?? 100));
+
+  const hardest = sorted[0];
+
+  // Most contested = closest to 50% but NOT the same image as hardest
+  const contested = [...withStats]
+    .filter(r => r.image_id !== hardest.image_id)
+    .sort((a, b) =>
+      Math.abs(50 - (a.cs?.human_acc_pct ?? 100)) -
+      Math.abs(50 - (b.cs?.human_acc_pct ?? 100))
+    )[0];
+
+  // Easiest = highest human_acc_pct, NOT same as hardest or contested
+  const usedIds = new Set([hardest.image_id, contested?.image_id]);
+  const easiest = [...withStats]
+    .filter(r => !usedIds.has(r.image_id))
+    .sort((a, b) => (b.cs?.human_acc_pct ?? 0) - (a.cs?.human_acc_pct ?? 0))[0];
 
   const slots = [
-    { emoji: '🔥', label: 'HARDEST THIS SESSION',  r: hardest },
-    { emoji: '⚖️', label: 'MOST CONTESTED',         r: contested },
-    { emoji: '✅', label: 'EASIEST THIS SESSION',   r: easiest },
-  ];
+    { emoji: '🔥', label: 'HARDEST THIS SESSION',  r: hardest   ?? withStats[0] },
+    { emoji: '⚖️', label: 'MOST CONTESTED',         r: contested ?? withStats[1] },
+    { emoji: '✅', label: 'EASIEST THIS SESSION',   r: easiest   ?? withStats[2] },
+  ].filter(s => s.r);
 
   document.getElementById('bm-insight-row').innerHTML = slots.map(({ emoji, label, r }) => {
     const { main, explain } = pickCaption(r.s, r.human_correct);
@@ -344,12 +378,18 @@ function renderChart(trend) {
     },
     options: {
       responsive: true, maintainAspectRatio: false,
+      layout: { padding: { top: 12, right: 8 } },
       plugins: { legend: { display: false } },
       scales: {
         y: {
-          min: 0, max: 100,
-          ticks: { callback: v => v + '%', font: { size: 11 } },
-          grid:  { color: 'rgba(128,128,128,.1)' },
+          min: 0,
+          max: 110,
+          ticks: {
+            callback: v => v > 100 ? '' : v + '%',
+            font: { size: 11 },
+            stepSize: 10,
+          },
+          grid: { color: 'rgba(128,128,128,.1)' },
         },
         x: {
           ticks: { font: { size: 10 }, autoSkip: true, maxTicksLimit: 10 },

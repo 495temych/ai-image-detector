@@ -77,4 +77,4 @@ We upload 6–8 pre-selected images (clearly real, clearly AI, a few ambiguous) 
 ---
 
 *ZHAW School of Engineering · Machine Learning and Data in Operation · Spring 2026*
-*Team: Marcos, Artemi, Afshin, Jibin*
+*Team: Marcos, Artemii, Afshin, Jibin*

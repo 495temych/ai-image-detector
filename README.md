@@ -338,7 +338,7 @@ Champion model: `efficientnet-b0 @champion` · Run ID: `2561d86a3f22495e91b2cc7d
 ## Team
 
 - Marcos
-- Artemi
+- Artemii
 - Afshin
 - Jibin
 

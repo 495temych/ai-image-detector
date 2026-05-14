@@ -8,10 +8,10 @@ RUN npm ci --production
 # Copy UI source into WORKDIR so server.js is at /app/server.js
 COPY ui/ .
 
-# picture_samples lives one level above server.js both locally (ui/../picture_samples)
-# and here (/app/../picture_samples = /picture_samples), so path.join(__dirname, '..', 'picture_samples')
+# image_samples lives one level above server.js both locally (ui/../image_samples)
+# and here (/app/../image_samples = /image_samples), so path.join(__dirname, '..', 'image_samples')
 # resolves correctly without any env-var override.
-COPY picture_samples/ /picture_samples/
+COPY image_samples/ /image_samples/
 
 EXPOSE 3000
 CMD ["node", "server.js"]

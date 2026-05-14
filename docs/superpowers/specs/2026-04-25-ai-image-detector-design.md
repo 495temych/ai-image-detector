@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-25
 **Course:** TSM_MachLeData · ZHAW School of Engineering · Spring 2026
-**Team:** Marcos, Artemi, Afshin, Jibin
+**Team:** Marcos, Artemii, Afshin, Jibin
 
 ---
 
