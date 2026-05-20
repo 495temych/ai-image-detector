@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — AI Image Detector</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..900,0..100,0..1;1,9..144,300..900,0..100,0..1&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead__brand">
+    <span class="brand-icon" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <circle cx="10" cy="10" r="8.5" stroke="currentColor" stroke-width="1.2"/>
+        <circle cx="10" cy="10" r="3" fill="currentColor"/>
+        <line x1="10" y1="1" x2="10" y2="4" stroke="currentColor" stroke-width="1.2"/>
+        <line x1="10" y1="16" x2="10" y2="19" stroke="currentColor" stroke-width="1.2"/>
+        <line x1="1" y1="10" x2="4" y2="10" stroke="currentColor" stroke-width="1.2"/>
+        <line x1="16" y1="10" x2="19" y2="10" stroke="currentColor" stroke-width="1.2"/>
+      </svg>
+    </span>
+    <span class="brand-name">AI Image Detector</span>
+  </div>
+  <nav class="tab-nav" aria-label="Section">
+    <a class="tab-link" href="index.html">Detector</a>
+    <a class="tab-link" href="benchmark.html">Challenge</a>
+    <a class="tab-link tab-link--active" href="dashboard.html">Dashboard</a>
+  </nav>
+  <div class="masthead__right">
+    <div class="api-pill" id="api-pill">
+      <span class="dot" id="api-dot"></span>
+      <span id="api-status">Connecting…</span>
+    </div>
+  </div>
+</header>
+
+<main class="dash-main">
+
+  <div class="dash-header">
+    <h1 class="dash-title">Model Health</h1>
+    <p class="dash-sub">
+      Live operational metrics from the session database.
+      Confidence and accuracy are computed from the last 200 predictions.
+    </p>
+  </div>
+
+  <!-- KPI row -->
+  <div class="kpi-row" id="kpi-row">
+    <div class="kpi-card"><p class="kpi-lbl">TOTAL SESSIONS</p><p class="kpi-val" id="kpi-sessions">—</p><p class="kpi-hint">completed rounds</p></div>
+    <div class="kpi-card"><p class="kpi-lbl">MODEL ACCURACY</p><p class="kpi-val" id="kpi-model">—</p><p class="kpi-hint">on benchmark pool</p></div>
+    <div class="kpi-card"><p class="kpi-lbl">HUMAN ACCURACY</p><p class="kpi-val" id="kpi-human">—</p><p class="kpi-hint">community average</p></div>
+    <div class="kpi-card"><p class="kpi-lbl">HUMAN–MODEL GAP</p><p class="kpi-val" id="kpi-gap">—</p><p class="kpi-hint">model advantage</p></div>
+  </div>
+
+  <!-- Health indicators -->
+  <div class="dash-card" id="health-card">
+    <p class="dash-card-title">Health indicators</p>
+    <p class="dash-card-sub">
+      Drift is detected when mean confidence drops below 72%, low-confidence
+      predictions exceed 25%, or both-fooled rate exceeds 15%.
+      These thresholds reflect expected model behaviour on this image pool.
+    </p>
+    <div class="health-table" id="health-table"></div>
+  </div>
+
+  <!-- Model info -->
+  <div class="dash-card" id="model-card">
+    <p class="dash-card-title">Registered model</p>
+    <p class="dash-card-sub">Champion model version currently serving all predictions.</p>
+    <div class="health-table" id="model-table"></div>
+  </div>
+
+  <!-- Charts row -->
+  <div class="dash-two-col">
+    <div class="dash-card">
+      <p class="dash-card-title">Confidence distribution</p>
+      <p class="dash-card-sub">
+        Histogram of model confidence scores across last 200 predictions.
+        A left-shift (more low-confidence scores) is the primary drift signal.
+      </p>
+      <div style="position:relative;height:180px">
+        <canvas id="conf-chart"
+          role="img"
+          aria-label="Histogram of model confidence in 5 buckets from 50% to 100%">
+          Model confidence distribution across recent predictions.
+        </canvas>
+      </div>
+    </div>
+    <div class="dash-card">
+      <p class="dash-card-title">Accuracy trend — last 20 sessions</p>
+      <p class="dash-card-sub">
+        Human accuracy varies round to round.
+        Model accuracy staying stable confirms no degradation.
+        Sustained model drops would trigger a retrain review.
+      </p>
+      <div style="position:relative;height:180px">
+        <canvas id="trend-chart"
+          role="img"
+          aria-label="Line chart of human and model accuracy per session">
+          Human and model accuracy trends across recent sessions.
+        </canvas>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer class="footer">
+  <span>EfficientNet-B0 · acc 89.6% · AUC 96.2%</span>
+  <span class="footer-sep">·</span>
+  <span>Marcos · Artemii · Afshin · Jibin</span>
+  <span class="footer-sep">·</span>
+  <span>ZHAW MLOps Spring 2026</span>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="dashboard.js"></script>
+</body>
+</html>

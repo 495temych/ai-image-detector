@@ -94,7 +94,7 @@ jobs:
             labels.json
 
   docker:
-    needs: export
+    needs: [evaluate, export]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -120,6 +120,8 @@ jobs:
         with:
           context: api/
           push: true
+          build-args: |
+            MLFLOW_RUN_ID=${{ needs.evaluate.outputs.run_id }}
           tags: |
             ghcr.io/${{ github.repository_owner }}/ai-image-detector-api:latest
             ghcr.io/${{ github.repository_owner }}/ai-image-detector-api:${{ github.sha }}

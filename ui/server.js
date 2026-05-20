@@ -7,6 +7,7 @@ const fs = require('fs');
 const {
   saveSession, getImageStatsMany, getGlobalStats,
   getRecentSessions, getImageExtendedMany, seedIfEmpty,
+  getKPIs, getDriftIndicators, getConfidenceDistribution, getTrend,
 } = require('./db');
 
 // Seed analytics data on first run so Challenge mode has community stats
@@ -221,6 +222,27 @@ app.post('/challenge/submit', express.json(), (req, res) => {
 
   sessions.delete(session_id); // single-use
   res.json({ session_id, results, summary, community, extended, global, trend, hardest_image_id: hardest?.image_id });
+});
+
+// ── Dashboard ──
+app.get('/dashboard/stats', (req, res) => {
+  try {
+    res.json({
+      kpis:      getKPIs(),
+      drift:     getDriftIndicators(),
+      conf_dist: getConfidenceDistribution(),
+      trend:     getTrend(),
+      model_info: {
+        version:  'efficientnet_v1',
+        run_id:   '2561d86a3f22495e91b2cc7d3d1d3497',
+        auc:      0.962,
+        test_acc: 0.896,
+      },
+    });
+  } catch (err) {
+    console.error('dashboard/stats error:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.listen(PORT, () => {

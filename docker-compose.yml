@@ -3,6 +3,8 @@ services:
     build: ./api
     ports:
       - "8000:8000"
+    environment:
+      - MLFLOW_RUN_ID=${MLFLOW_RUN_ID:-2561d86a3f22495e91b2cc7d3d1d3497}
     restart: unless-stopped
 
   ui:

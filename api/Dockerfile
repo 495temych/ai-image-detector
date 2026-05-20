@@ -1,5 +1,8 @@
 FROM python:3.11-slim
 
+ARG MLFLOW_RUN_ID=2561d86a3f22495e91b2cc7d3d1d3497
+ENV MLFLOW_RUN_ID=${MLFLOW_RUN_ID}
+
 # opencv-headless requires these system libs
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libglib2.0-0 \

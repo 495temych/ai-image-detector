@@ -145,7 +145,62 @@ function seedIfEmpty() {
   }
 }
 
+// ── Dashboard queries ─────────────────────────────────────────────
+
+const _kpis = db.prepare(`
+  SELECT
+    COUNT(*)                                              AS total_sessions,
+    ROUND(AVG(model_score) * 10)                         AS model_acc_pct,
+    ROUND(AVG(human_score) * 10)                         AS human_acc_pct,
+    ROUND((AVG(model_score) - AVG(human_score)) * 10)    AS gap_pct
+  FROM sessions
+`);
+function getKPIs() { return _kpis.get(); }
+
+const _drift = db.prepare(`
+  SELECT
+    ROUND(AVG(model_conf) * 100)                                        AS mean_conf_pct,
+    ROUND(AVG(CASE WHEN model_conf < 0.65 THEN 1.0 ELSE 0 END) * 100)  AS low_conf_rate_pct,
+    ROUND(AVG(CASE WHEN human_correct=0 AND model_correct=0
+                   THEN 1.0 ELSE 0 END) * 100)                         AS both_fooled_pct,
+    COUNT(*)                                                             AS n
+  FROM (
+    SELECT model_conf, human_correct, model_correct
+    FROM session_results
+    ORDER BY played_at DESC LIMIT 200
+  )
+`);
+function getDriftIndicators() {
+  const d = _drift.get();
+  // Thresholds must match check_drift.py
+  d.mean_conf_status   = d.mean_conf_pct   >= 72 ? 'ok' : 'warn';
+  d.low_conf_status    = d.low_conf_rate_pct <= 25 ? 'ok' : 'warn';
+  d.both_fooled_status = d.both_fooled_pct  <= 15 ? 'ok' : 'warn';
+  d.drift_detected     = d.mean_conf_status  === 'warn' ||
+                         d.low_conf_status   === 'warn' ||
+                         d.both_fooled_status === 'warn';
+  return d;
+}
+
+const _confDist = db.prepare(`
+  SELECT
+    SUM(CASE WHEN model_conf < 0.60 THEN 1 ELSE 0 END)                        AS b50,
+    SUM(CASE WHEN model_conf >= 0.60 AND model_conf < 0.70 THEN 1 ELSE 0 END) AS b60,
+    SUM(CASE WHEN model_conf >= 0.70 AND model_conf < 0.80 THEN 1 ELSE 0 END) AS b70,
+    SUM(CASE WHEN model_conf >= 0.80 AND model_conf < 0.90 THEN 1 ELSE 0 END) AS b80,
+    SUM(CASE WHEN model_conf >= 0.90 THEN 1 ELSE 0 END)                       AS b90
+  FROM (SELECT model_conf FROM session_results ORDER BY played_at DESC LIMIT 200)
+`);
+function getConfidenceDistribution() {
+  const r = _confDist.get();
+  return [r.b50, r.b60, r.b70, r.b80, r.b90];
+}
+
+// getTrend reuses the existing prepared statement
+function getTrend() { return getRecentSessions(20); }
+
 module.exports = {
   saveSession, getImageStats, getImageStatsMany, getGlobalStats,
   getRecentSessions, getImageExtendedMany, seedIfEmpty,
+  getKPIs, getDriftIndicators, getConfidenceDistribution, getTrend,
 };

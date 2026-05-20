@@ -1,6 +1,7 @@
 """Model loading and inference — ONNX for /predict, PyTorch for /explain."""
 import base64
 import io
+import os
 import threading
 from pathlib import Path
 
@@ -18,7 +19,7 @@ ONNX_PATH = MODEL_DIR / "model.onnx"
 PT_PATH = MODEL_DIR / "best_weights.pt"
 
 MODEL_VERSION = "efficientnet_v1"
-RUN_ID = "2561d86a3f22495e91b2cc7d3d1d3497"
+RUN_ID = os.getenv("MLFLOW_RUN_ID", "2561d86a3f22495e91b2cc7d3d1d3497")
 
 CLASSES = {0: "fake", 1: "real"}
 

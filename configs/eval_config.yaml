@@ -1,6 +1,6 @@
 model:
-  hf_model_id: "dima806/ai_vs_real_image_detection"
-  accuracy_threshold: 0.90
+  onnx_path: api/model.onnx
+  accuracy_threshold: 0.85
 
 data:
   raw_dir: "data/raw"
