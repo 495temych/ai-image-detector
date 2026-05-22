@@ -36,56 +36,55 @@ console.log(`Pool: ${FAKE_POOL.length} fake + ${REAL_POOL.length} real`);
 
 if (ALL.length === 0) {
   console.log('[seed] No sample images found in image_samples/ — skipping synthetic seed.');
-  process.exit(0);
+} else {
+  // Fixed per-image difficulty (0 = easy, 1 = hard)
+  const difficulty = {};
+  for (const img of ALL) {
+    difficulty[img.image_id] = Math.random();
+  }
+
+  function sample(arr, n) {
+    return [...arr].sort(() => Math.random() - 0.5).slice(0, n);
+  }
+
+  function simulateAnswer(true_label, diff, isModel) {
+    // effective accuracy at avg difficulty 0.5 = base - 0.5*drop
+    // targets: model ~89%  -> base = 0.89 + 0.06 = 0.95
+    //          human ~76%  -> base = 0.76 + 0.11 = 0.87
+    const base = isModel ? 0.95 : 0.87;
+    const drop = isModel ? 0.12 : 0.22;
+    const correct = Math.random() < (base - diff * drop);
+    return correct ? true_label : (true_label === 'fake' ? 'real' : 'fake');
+  }
+
+  const N_SESSIONS = 120;
+
+  for (let i = 0; i < N_SESSIONS; i++) {
+    const session_id = uuidv4();
+    const images = [
+      ...sample(FAKE_POOL, 5),
+      ...sample(REAL_POOL, 5),
+    ].sort(() => Math.random() - 0.5);
+
+    const results = images.map(img => {
+      const diff        = difficulty[img.image_id];
+      const user_answer = simulateAnswer(img.true_label, diff, false);
+      const model_label = simulateAnswer(img.true_label, diff, true);
+      return {
+        image_id:      img.image_id,
+        true_label:    img.true_label,
+        user_answer,
+        model_label,
+        model_conf:    parseFloat((0.55 + Math.random() * 0.44).toFixed(3)),
+        human_correct: user_answer  === img.true_label,
+        model_correct: model_label  === img.true_label,
+      };
+    });
+
+    saveSession(session_id, results);
+  }
+
+  console.log(`\nSeeded ${N_SESSIONS} sessions.`);
+  console.log('Global stats:', getGlobalStats());
+  console.log('Sample image stats (fake/0001.jpg):', getImageStats('fake/0001.jpg'));
 }
-
-// Fixed per-image difficulty (0 = easy, 1 = hard)
-const difficulty = {};
-for (const img of ALL) {
-  difficulty[img.image_id] = Math.random();
-}
-
-function sample(arr, n) {
-  return [...arr].sort(() => Math.random() - 0.5).slice(0, n);
-}
-
-function simulateAnswer(true_label, diff, isModel) {
-  // effective accuracy at avg difficulty 0.5 = base − 0.5×drop
-  // targets: model ≈ 89%  → base = 0.89 + 0.06 = 0.95
-  //          human ≈ 76%  → base = 0.76 + 0.11 = 0.87
-  const base = isModel ? 0.95 : 0.87;
-  const drop = isModel ? 0.12 : 0.22;
-  const correct = Math.random() < (base - diff * drop);
-  return correct ? true_label : (true_label === 'fake' ? 'real' : 'fake');
-}
-
-const N_SESSIONS = 120;
-
-for (let i = 0; i < N_SESSIONS; i++) {
-  const session_id = uuidv4();
-  const images = [
-    ...sample(FAKE_POOL, 5),
-    ...sample(REAL_POOL, 5),
-  ].sort(() => Math.random() - 0.5);
-
-  const results = images.map(img => {
-    const diff        = difficulty[img.image_id];
-    const user_answer = simulateAnswer(img.true_label, diff, false);
-    const model_label = simulateAnswer(img.true_label, diff, true);
-    return {
-      image_id:      img.image_id,
-      true_label:    img.true_label,
-      user_answer,
-      model_label,
-      model_conf:    parseFloat((0.55 + Math.random() * 0.44).toFixed(3)),
-      human_correct: user_answer  === img.true_label,
-      model_correct: model_label  === img.true_label,
-    };
-  });
-
-  saveSession(session_id, results);
-}
-
-console.log(`\nSeeded ${N_SESSIONS} sessions.`);
-console.log('Global stats:', getGlobalStats());
-console.log('Sample image stats (fake/0001.jpg):', getImageStats('fake/0001.jpg'));
