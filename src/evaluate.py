@@ -1,50 +1,42 @@
-import subprocess
+"""Model evaluation: compute metrics and log to MLflow.
+
+Heavy dependencies (onnxruntime, torch, mlflow, dagshub) are imported
+lazily inside the functions that need them so that the pure utility
+functions (compute_metrics, parse_pipeline_output) can be imported and
+tested without the full ML stack installed.
+"""
 import argparse
+import subprocess
 from pathlib import Path
 
-import dagshub
-import yaml
-import mlflow
-import numpy as np
-import onnxruntime as ort
-from PIL import Image
-from torchvision import transforms
 from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
-
-_TRANSFORM = transforms.Compose([
-    transforms.Resize(256),
-    transforms.CenterCrop(224),
-    transforms.ToTensor(),
-    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-])
 
 # Class indices confirmed from training sanity check
 FAKE_IDX, REAL_IDX = 1, 0
 
 
-def get_git_commit() -> str:
-    result = subprocess.run(
-        ["git", "rev-parse", "HEAD"], capture_output=True, text=True
-    )
-    return result.stdout.strip()
+# ---------------------------------------------------------------------------
+# Pure utility functions — testable with no ML dependencies
+# ---------------------------------------------------------------------------
 
+def parse_pipeline_output(
+    raw: list[dict],
+    fake_label: str = "FAKE",
+) -> tuple[int, float]:
+    """Parse a HuggingFace pipeline output into (binary_label, fake_prob).
 
-def get_dvc_hash(dvc_file: str = "data/processed.dvc") -> str:
-    try:
-        with open(dvc_file) as f:
-            info = yaml.safe_load(f)
-        return info["outs"][0]["md5"]
-    except (FileNotFoundError, KeyError, TypeError):
-        return "unknown"
+    Args:
+        raw: list of ``{"label": str, "score": float}`` dicts from a pipeline.
+        fake_label: label string that represents the "fake / AI-generated" class.
 
-
-def _infer_onnx(session: ort.InferenceSession, img_path: str) -> tuple[int, float]:
-    img = Image.open(img_path).convert("RGB")
-    x = _TRANSFORM(img).unsqueeze(0).numpy()
-    logits = session.run(None, {session.get_inputs()[0].name: x})[0][0]
-    probs = np.exp(logits) / np.exp(logits).sum()
-    pred = int(np.argmax(probs))
-    return pred, float(probs[FAKE_IDX])
+    Returns:
+        ``(label, fake_prob)`` where *label* is 1 if the top prediction is fake
+        else 0, and *fake_prob* is the probability assigned to the fake class.
+    """
+    scores = {d["label"]: d["score"] for d in raw}
+    fake_prob = scores.get(fake_label, 0.0)
+    top_label = max(scores, key=scores.__getitem__)
+    return int(top_label == fake_label), fake_prob
 
 
 def compute_metrics(
@@ -57,6 +49,47 @@ def compute_metrics(
         "f1":       float(f1_score(true_labels, pred_labels)),
         "auc_roc":  float(roc_auc_score(true_labels, pred_scores)),
     }
+
+
+# ---------------------------------------------------------------------------
+# Pipeline helpers — require onnxruntime / torch / PIL at call time
+# ---------------------------------------------------------------------------
+
+def get_git_commit() -> str:
+    result = subprocess.run(
+        ["git", "rev-parse", "HEAD"], capture_output=True, text=True
+    )
+    return result.stdout.strip()
+
+
+def get_dvc_hash(dvc_file: str = "data/processed.dvc") -> str:
+    try:
+        import yaml  # noqa: PLC0415
+        with open(dvc_file) as f:
+            info = yaml.safe_load(f)
+        return info["outs"][0]["md5"]
+    except (FileNotFoundError, KeyError, TypeError):
+        return "unknown"
+
+
+def _infer_onnx(session, img_path: str) -> tuple[int, float]:
+    import numpy as np                       # noqa: PLC0415
+    from PIL import Image                    # noqa: PLC0415
+    from torchvision import transforms       # noqa: PLC0415
+
+    transform = transforms.Compose([
+        transforms.Resize(256),
+        transforms.CenterCrop(224),
+        transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+    ])
+
+    img = Image.open(img_path).convert("RGB")
+    x = transform(img).unsqueeze(0).numpy()
+    logits = session.run(None, {session.get_inputs()[0].name: x})[0][0]
+    probs = np.exp(logits) / np.exp(logits).sum()
+    pred = int(np.argmax(probs))
+    return pred, float(probs[FAKE_IDX])
 
 
 def load_test_images(test_dir: Path) -> tuple[list[str], list[int]]:
@@ -74,6 +107,9 @@ def load_test_images(test_dir: Path) -> tuple[list[str], list[int]]:
 
 
 def run_evaluation(config: dict) -> dict:
+    import mlflow                            # noqa: PLC0415
+    import onnxruntime as ort                # noqa: PLC0415
+
     onnx_path = config["model"]["onnx_path"]
     test_dir  = Path(config["data"]["test_dir"])
 
@@ -110,6 +146,11 @@ def run_evaluation(config: dict) -> dict:
 
 
 def main() -> None:
+    # Heavy MLOps imports — only needed when running the full pipeline
+    import dagshub  # noqa: PLC0415
+    import yaml     # noqa: PLC0415
+    import mlflow   # noqa: PLC0415
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", default="configs/eval_config.yaml")
     args = parser.parse_args()
