@@ -26,7 +26,7 @@ jobs:
       - name: Configure DVC remote credentials
         run: |
           dvc remote modify dagshub --local auth basic
-          dvc remote modify dagshub --local user 495temych
+          dvc remote modify dagshub --local user marcosncosta1
           dvc remote modify dagshub --local password ${{ secrets.DAGSHUB_TOKEN }}
 
       - name: Pull dataset from DagsHub
