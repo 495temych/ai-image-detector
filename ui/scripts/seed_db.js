@@ -20,7 +20,9 @@ const { saveSession, getImageStats, getGlobalStats } = require(
 const SAMPLES_DIR = path.join(__dirname, '..', '..', 'image_samples');
 
 function loadPool(label) {
-  return fs.readdirSync(path.join(SAMPLES_DIR, label))
+  const dir = path.join(SAMPLES_DIR, label);
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir)
     .filter(f => /\.(jpg|jpeg|png)$/i.test(f))
     .sort()
     .map(f => ({ image_id: `${label}/${f}`, true_label: label }));
@@ -31,6 +33,11 @@ const REAL_POOL = loadPool('real');
 const ALL       = [...FAKE_POOL, ...REAL_POOL];
 
 console.log(`Pool: ${FAKE_POOL.length} fake + ${REAL_POOL.length} real`);
+
+if (ALL.length === 0) {
+  console.log('[seed] No sample images found in image_samples/ — skipping synthetic seed.');
+  process.exit(0);
+}
 
 // Fixed per-image difficulty (0 = easy, 1 = hard)
 const difficulty = {};
