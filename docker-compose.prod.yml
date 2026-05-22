@@ -1,0 +1,18 @@
+services:
+  api:
+    image: ghcr.io/495temych/ai-image-detector-api:latest
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  ui:
+    image: ghcr.io/495temych/ai-image-detector-ui:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./ui/data:/app/data   # persists SQLite DB across restarts
+    environment:
+      - API_URL=http://api:8000
+    depends_on:
+      - api
+    restart: unless-stopped
