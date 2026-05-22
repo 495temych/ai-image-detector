@@ -1,11 +1,17 @@
 import io
-import json
-import numpy as np
-import pytest
-from unittest import mock
-from PIL import Image
-from fastapi.testclient import TestClient
 
+import pytest
+from fastapi.testclient import TestClient
+from PIL import Image
+
+# conftest.py injects a stub api.model before this import runs,
+# so no real ONNX / PyTorch weights are loaded.
+from api.main import app
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
 
 def make_jpeg_bytes(color: tuple = (100, 150, 200)) -> bytes:
     img = Image.new("RGB", (224, 224), color=color)
@@ -16,28 +22,20 @@ def make_jpeg_bytes(color: tuple = (100, 150, 200)) -> bytes:
 
 @pytest.fixture
 def client():
-    """Patch the _get_* lazy helpers so no real model files are needed."""
-    mock_session = mock.MagicMock()
-    mock_session.run.return_value = [np.array([[0.1, 0.9]])]  # logits: REAL (idx 1) wins
+    """TestClient backed by the stub model (no real inference)."""
+    return TestClient(app)
 
-    mock_fe = mock.MagicMock()
-    mock_fe.return_value = {
-        "pixel_values": np.zeros((1, 3, 224, 224), dtype=np.float32)
-    }
 
-    with (
-        mock.patch("api.main._get_session", return_value=mock_session),
-        mock.patch("api.main._get_feature_extractor", return_value=mock_fe),
-        mock.patch("api.main._get_id2label", return_value={"0": "FAKE", "1": "REAL"}),
-    ):
-        from api.main import app
-        yield TestClient(app)
-
+# ---------------------------------------------------------------------------
+# Tests
+# ---------------------------------------------------------------------------
 
 def test_health(client):
     r = client.get("/health")
     assert r.status_code == 200
-    assert r.json() == {"status": "ok"}
+    data = r.json()
+    assert data["status"] == "ok"
+    assert "model" in data
 
 
 def test_predict_returns_valid_structure(client):
@@ -47,14 +45,22 @@ def test_predict_returns_valid_structure(client):
     )
     assert r.status_code == 200
     data = r.json()
-    assert data["label"] in ("real", "ai-generated")
+    assert data["label"] in ("real", "fake")
     assert 0.0 <= data["confidence"] <= 1.0
 
 
 def test_predict_real_image(client):
-    # Mock returns logits [0.1, 0.9] → REAL (index 1) wins
+    # Stub returns ("real", 0.9) → label must be "real"
     r = client.post(
         "/predict",
         files={"file": ("img.jpg", make_jpeg_bytes(), "image/jpeg")},
     )
     assert r.json()["label"] == "real"
+
+
+def test_predict_rejects_non_image(client):
+    r = client.post(
+        "/predict",
+        files={"file": ("doc.pdf", b"%PDF-1.4", "application/pdf")},
+    )
+    assert r.status_code == 415

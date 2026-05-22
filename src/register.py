@@ -1,11 +1,6 @@
 import argparse
 import sys
 
-import dagshub
-import yaml
-import mlflow
-from mlflow.tracking import MlflowClient
-
 
 def should_register(accuracy: float, threshold: float) -> bool:
     return accuracy >= threshold
@@ -14,6 +9,9 @@ def should_register(accuracy: float, threshold: float) -> bool:
 def promote_model(run_id: str, model_name: str) -> str:
     """Register the run's model artifact and promote to Production.
     Returns the new model version string."""
+    import mlflow                          # noqa: PLC0415
+    from mlflow.tracking import MlflowClient  # noqa: PLC0415
+
     client = MlflowClient()
     model_uri = f"runs:/{run_id}/model"
     mv = mlflow.register_model(model_uri, model_name)
@@ -28,6 +26,11 @@ def promote_model(run_id: str, model_name: str) -> str:
 
 
 def main() -> None:
+    # Heavy MLOps imports — only needed when running the full pipeline
+    import dagshub                             # noqa: PLC0415
+    import yaml                                # noqa: PLC0415
+    from mlflow.tracking import MlflowClient   # noqa: PLC0415
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", default="configs/eval_config.yaml")
     parser.add_argument("--run-id", required=True)

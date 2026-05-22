@@ -1,4 +1,3 @@
-import pytest
 from src.evaluate import compute_metrics, parse_pipeline_output
 
 

@@ -1,0 +1,181 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# MLOps Pipeline — ai-image-detector
+#
+# Full evaluate → register → export → docker chain.
+# Triggered manually (workflow_dispatch) whenever a new model has been trained
+# on Kaggle and its weights pushed to DVC/DagsHub.
+#
+# Required GitHub secrets:
+#   DAGSHUB_TOKEN  — DagsHub personal access token (for DVC pull + MLflow)
+#   KAGGLE_USERNAME / KAGGLE_KEY — only needed if running data prep here
+# ──────────────────────────────────────────────────────────────────────────────
+name: MLOps Pipeline
+
+on:
+  workflow_dispatch:
+
+env:
+  DAGSHUB_USER_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+
+jobs:
+  # ────────────────────────────────────────────────────────────────
+  # 1. Evaluate — run ONNX model on the test split, log to MLflow
+  # ────────────────────────────────────────────────────────────────
+  evaluate:
+    name: 📊 Evaluate model
+    runs-on: ubuntu-latest
+    outputs:
+      run_id: ${{ steps.run_eval.outputs.run_id }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Configure DVC remote credentials
+        run: |
+          dvc remote modify dagshub --local auth basic
+          dvc remote modify dagshub --local user marcosncosta1
+          dvc remote modify dagshub --local password ${{ secrets.DAGSHUB_TOKEN }}
+
+      - name: Pull data & model weights from DagsHub
+        run: dvc pull
+
+      - name: Run evaluation
+        id: run_eval
+        run: |
+          python src/evaluate.py --config configs/eval_config.yaml
+          echo "run_id=$(cat mlflow_run_id.txt)" >> $GITHUB_OUTPUT
+
+      - name: Upload run ID
+        uses: actions/upload-artifact@v4
+        with:
+          name: mlflow-run-id
+          path: mlflow_run_id.txt
+
+  # ────────────────────────────────────────────────────────────────
+  # 2. Register — gate on accuracy threshold, promote to Production
+  # ────────────────────────────────────────────────────────────────
+  register:
+    name: 📋 Register model
+    needs: evaluate
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Download run ID
+        uses: actions/download-artifact@v4
+        with:
+          name: mlflow-run-id
+
+      - name: Register & promote to Production
+        run: |
+          python src/register.py \
+            --config configs/eval_config.yaml \
+            --run-id "$(cat mlflow_run_id.txt)"
+
+  # ────────────────────────────────────────────────────────────────
+  # 3. Export — pull Production model from MLflow, export to ONNX
+  # ────────────────────────────────────────────────────────────────
+  export:
+    name: 📦 Export ONNX
+    needs: register
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Download run ID
+        uses: actions/download-artifact@v4
+        with:
+          name: mlflow-run-id
+
+      - name: Export ONNX from Production model
+        run: |
+          python src/export_onnx.py \
+            --config configs/eval_config.yaml \
+            --run-id "$(cat mlflow_run_id.txt)" \
+            --output-dir api/
+
+      - name: Upload model artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-artifacts
+          path: |
+            api/model.onnx
+            api/labels.json
+
+  # ────────────────────────────────────────────────────────────────
+  # 4. Docker — rebuild and push images with the new model baked in
+  # ────────────────────────────────────────────────────────────────
+  docker:
+    name: 🐳 Rebuild & push images
+    needs: [evaluate, export]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download model artifacts into api/
+        uses: actions/download-artifact@v4
+        with:
+          name: model-artifacts
+          path: api/
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build & push API image (new model)
+        uses: docker/build-push-action@v5
+        with:
+          context: api/
+          push: true
+          build-args: MLFLOW_RUN_ID=${{ needs.evaluate.outputs.run_id }}
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/ai-image-detector-api:latest
+            ghcr.io/${{ github.repository_owner }}/ai-image-detector-api:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build & push UI image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ui/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/ai-image-detector-ui:latest
+            ghcr.io/${{ github.repository_owner }}/ai-image-detector-ui:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
