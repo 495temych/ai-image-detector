@@ -35,11 +35,13 @@ function pickRandom(arr, n) {
 
 function readSampleFiles(label) {
   const dir = path.join(SAMPLES_DIR, label);
+  if (!fs.existsSync(dir)) return [];
   return fs.readdirSync(dir).filter(f => /\.(jpe?g|png|webp)$/i.test(f));
 }
 
 function getImagePool(label) {
   const dir = path.join(SAMPLES_DIR, label);
+  if (!fs.existsSync(dir)) return [];
   return fs.readdirSync(dir)
     .filter(f => f.endsWith('.jpg') || f.endsWith('.png'))
     .map(f => ({ id: `${label}/${f}`, true_label: label, file: f, label }));
@@ -101,6 +103,9 @@ app.get('/challenge/session', async (req, res) => {
   try {
     const fakePool = getImagePool('fake');
     const realPool = getImagePool('real');
+    if (fakePool.length === 0 || realPool.length === 0) {
+      return res.status(503).json({ error: 'No sample images available. Add images to image_samples/fake/ and image_samples/real/ to enable Challenge mode.' });
+    }
     const entries = [
       ...pickRandom(fakePool, 5),
       ...pickRandom(realPool, 5),
