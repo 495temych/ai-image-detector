@@ -34,7 +34,8 @@ api/samples/
 
 # Challenge image pool (local only — not committed)
 picture_samples/
-image_samples/
+image_samples/*
+!image_samples/.gitkeep
 
 # UI runtime data (SQLite DB, session logs)
 ui/data/*
