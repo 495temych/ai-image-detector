@@ -12,12 +12,20 @@ Pipelines, Databricks MLflow) where:
   - CI/CD reads those metrics and decides whether to promote the model.
   - The deployment pipeline never needs the raw training data.
 
+Supported accuracy metric names (Kaggle notebooks commonly use these):
+  accuracy, test_acc, val_acc, test_accuracy, val_accuracy, acc
+
 Heavy dependencies (mlflow, dagshub) are imported lazily so that the
 pure utility functions can be unit-tested without the full ML stack.
 """
 import argparse
 import sys
 from pathlib import Path
+
+try:
+    from mlops_utils import ACCURACY_ALIASES, extract_accuracy  # script mode
+except ImportError:
+    from src.mlops_utils import ACCURACY_ALIASES, extract_accuracy  # test/package mode
 
 
 # ---------------------------------------------------------------------------
@@ -77,26 +85,39 @@ def fetch_run_metrics(client, run_id: str) -> dict[str, float]:
 def find_best_run_with_accuracy(client, experiment_name: str):
     """Search the experiment for the run with the highest accuracy.
 
-    Used as a fallback when the registered model version's run has no
-    accuracy metric — e.g. when a CI run registered the model artifact
-    without logging training metrics.
+    Tries each alias in ACCURACY_ALIASES so notebooks that log
+    test_acc / val_acc / etc. are found correctly.
+
+    Returns (run, accuracy_value) tuple.
     """
     experiment = client.get_experiment_by_name(experiment_name)
     if experiment is None:
-        raise RuntimeError(f"MLflow experiment '{experiment_name}' not found.")
-
-    runs = client.search_runs(
-        experiment_ids=[experiment.experiment_id],
-        filter_string="metrics.accuracy > 0",
-        order_by=["metrics.accuracy DESC"],
-        max_results=1,
-    )
-    if not runs:
         raise RuntimeError(
-            f"No runs with an 'accuracy' metric found in experiment '{experiment_name}'.\n"
-            "Make sure your Kaggle training notebook logs accuracy via mlflow.log_metric()."
+            f"MLflow experiment '{experiment_name}' not found.\n"
+            "Make sure your Kaggle notebook calls:\n"
+            "  mlflow.set_experiment('ai-image-detector')"
         )
-    return runs[0]
+
+    for key in ACCURACY_ALIASES:
+        runs = client.search_runs(
+            experiment_ids=[experiment.experiment_id],
+            filter_string=f"metrics.{key} > 0",
+            order_by=[f"metrics.{key} DESC"],
+            max_results=1,
+        )
+        if runs:
+            run = runs[0]
+            value = float(run.data.metrics[key])
+            print(f"   Found metric '{key}' = {value:.4f} on run {run.info.run_id}")
+            return run, value
+
+    aliases = ", ".join(ACCURACY_ALIASES)
+    raise RuntimeError(
+        f"No runs with an accuracy metric found in experiment '{experiment_name}'.\n"
+        f"Tried keys: {aliases}\n"
+        "Make sure your Kaggle training notebook logs accuracy, e.g.:\n"
+        "  mlflow.log_metric('test_acc', accuracy)"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -108,10 +129,10 @@ def run_evaluation(config: dict) -> dict:
 
     Strategy:
     1. Query the registry for the latest registered model version.
-    2. Try to read accuracy from that version's linked run.
-    3. If the linked run has no accuracy (e.g. it was a CI artifact-only
-       run), fall back to searching the full experiment for the run with
-       the highest accuracy — this finds the actual Kaggle training run.
+    2. Try to read accuracy (any alias) from that version's linked run.
+    3. If the linked run has no accuracy (e.g. a CI artifact-only run),
+       search the full experiment for the run with the highest accuracy
+       — this finds the actual Kaggle training run.
     """
     from mlflow.tracking import MlflowClient  # noqa: PLC0415
 
@@ -126,25 +147,25 @@ def run_evaluation(config: dict) -> dict:
     print(f"   Stage   : {mv.current_stage}")
     print(f"   Run ID  : {mv.run_id}")
 
-    metrics = fetch_run_metrics(client, mv.run_id)
-    run_id  = mv.run_id
+    metrics  = fetch_run_metrics(client, mv.run_id)
+    run_id   = mv.run_id
+    accuracy = extract_accuracy(metrics)
 
-    if "accuracy" not in metrics:
+    if accuracy is None:
         print(
-            f"\n⚠️  Run {mv.run_id} has no 'accuracy' metric "
-            f"(likely a CI artifact-only run).\n"
+            f"\n⚠️  Run {mv.run_id} has no accuracy metric "
+            "(likely a CI artifact-only run).\n"
             f"   Searching experiment '{experiment_name}' for the best training run..."
         )
-        best = find_best_run_with_accuracy(client, experiment_name)
-        run_id  = best.info.run_id
-        metrics = best.data.metrics
-        print(f"   Found run : {run_id}")
+        best_run, accuracy = find_best_run_with_accuracy(client, experiment_name)
+        run_id  = best_run.info.run_id
+        metrics = best_run.data.metrics
+        print(f"   Using run : {run_id}")
 
     print("\n📊 Metrics from training run:")
     for k, v in metrics.items():
         print(f"   {k}: {v:.4f}" if isinstance(v, float) else f"   {k}: {v}")
 
-    accuracy = metrics["accuracy"]
     print(f"\n🎯 Accuracy {accuracy:.4f} vs threshold {threshold}")
     if accuracy < threshold:
         print("❌ Below threshold — model will NOT be promoted.")
@@ -154,7 +175,8 @@ def run_evaluation(config: dict) -> dict:
     Path("mlflow_run_id.txt").write_text(run_id)
     print("\nRun ID written to mlflow_run_id.txt")
 
-    return metrics
+    # Normalise so downstream scripts always see 'accuracy'
+    return {**metrics, "accuracy": accuracy}
 
 
 def main() -> None:

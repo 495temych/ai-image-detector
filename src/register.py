@@ -17,6 +17,11 @@ Strategy
 import argparse
 import sys
 
+try:
+    from mlops_utils import ACCURACY_ALIASES, extract_accuracy  # script mode
+except ImportError:
+    from src.mlops_utils import ACCURACY_ALIASES, extract_accuracy  # test/package mode
+
 
 # ---------------------------------------------------------------------------
 # Pure helper — unit-testable with no ML dependencies
@@ -104,7 +109,11 @@ def main() -> None:
     client = MlflowClient()
 
     run       = client.get_run(args.run_id)
-    accuracy  = run.data.metrics["accuracy"]
+    accuracy  = extract_accuracy(run.data.metrics)
+    if accuracy is None:
+        keys = ", ".join(ACCURACY_ALIASES)
+        print(f"❌ Run {args.run_id} has no accuracy metric (tried: {keys}).")
+        sys.exit(1)
     threshold = config["model"]["accuracy_threshold"]
     model_name = config["mlflow"]["model_name"]
 
