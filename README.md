@@ -129,7 +129,7 @@ Training runs once externally on Kaggle
 > Requires [Docker Desktop](https://www.docker.com/products/docker-desktop/) running.
 
 ```bash
-git clone https://github.com/marcosncosta1/ai-image-detector.git
+git clone https://github.com/495temych/ai-image-detector.git
 cd ai-image-detector
 docker compose up --build
 ```
@@ -145,7 +145,7 @@ Subsequent builds use cached layers and take under 30 seconds.
 ### Option B — Local (Python + Node.js)
 
 ```bash
-git clone https://github.com/marcosncosta1/ai-image-detector.git
+git clone https://github.com/495temych/ai-image-detector.git
 cd ai-image-detector
 conda env create -f env.yaml
 conda activate mlops-img
