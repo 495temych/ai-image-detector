@@ -82,25 +82,14 @@ def fetch_run_metrics(client, run_id: str) -> dict[str, float]:
     return run.data.metrics
 
 
-def find_best_run_with_accuracy(client, experiment_name: str):
-    """Search the experiment for the run with the highest accuracy.
+def _search_experiments_for_accuracy(client, experiment_ids: list[str]):
+    """Search a list of experiments for the highest-accuracy run.
 
-    Tries each alias in ACCURACY_ALIASES so notebooks that log
-    test_acc / val_acc / etc. are found correctly.
-
-    Returns (run, accuracy_value) tuple.
+    Tries every accuracy alias. Returns (run, key, value) or None.
     """
-    experiment = client.get_experiment_by_name(experiment_name)
-    if experiment is None:
-        raise RuntimeError(
-            f"MLflow experiment '{experiment_name}' not found.\n"
-            "Make sure your Kaggle notebook calls:\n"
-            "  mlflow.set_experiment('ai-image-detector')"
-        )
-
     for key in ACCURACY_ALIASES:
         runs = client.search_runs(
-            experiment_ids=[experiment.experiment_id],
+            experiment_ids=experiment_ids,
             filter_string=f"metrics.{key} > 0",
             order_by=[f"metrics.{key} DESC"],
             max_results=1,
@@ -108,13 +97,59 @@ def find_best_run_with_accuracy(client, experiment_name: str):
         if runs:
             run = runs[0]
             value = float(run.data.metrics[key])
-            print(f"   Found metric '{key}' = {value:.4f} on run {run.info.run_id}")
+            return run, key, value
+    return None
+
+
+def find_best_run_with_accuracy(client, experiment_name: str):
+    """Search for the run with the highest accuracy metric.
+
+    Strategy:
+    1. Try the named experiment first.
+    2. If not found or empty, fall back to searching ALL active experiments.
+
+    Supports common accuracy key aliases (accuracy, test_acc, val_acc, …).
+
+    Returns (run, accuracy_value) tuple.
+    """
+    # ── 1. try the named experiment ───────────────────────────────────────
+    experiment = client.get_experiment_by_name(experiment_name)
+    if experiment is not None:
+        result = _search_experiments_for_accuracy(client, [experiment.experiment_id])
+        if result is not None:
+            run, key, value = result
+            print(f"   Found metric '{key}' = {value:.4f} on run {run.info.run_id} "
+                  f"(experiment: '{experiment_name}')")
             return run, value
+        print(
+            f"   Experiment '{experiment_name}' has no accuracy runs. "
+            "Falling back to all experiments..."
+        )
+    else:
+        print(
+            f"   Experiment '{experiment_name}' not found. "
+            "Falling back to all experiments..."
+        )
+
+    # ── 2. search all active experiments ─────────────────────────────────
+    all_experiments = client.search_experiments()
+    all_ids = [e.experiment_id for e in all_experiments]
+    result = _search_experiments_for_accuracy(client, all_ids)
+    if result is not None:
+        run, key, value = result
+        exp_id = run.info.experiment_id
+        exp_name = next(
+            (e.name for e in all_experiments if e.experiment_id == exp_id),
+            exp_id,
+        )
+        print(f"   Found metric '{key}' = {value:.4f} on run {run.info.run_id} "
+              f"(experiment: '{exp_name}')")
+        return run, value
 
     aliases = ", ".join(ACCURACY_ALIASES)
     raise RuntimeError(
-        f"No runs with an accuracy metric found in experiment '{experiment_name}'.\n"
-        f"Tried keys: {aliases}\n"
+        "No runs with an accuracy metric found in any MLflow experiment.\n"
+        f"Tried metric keys: {aliases}\n"
         "Make sure your Kaggle training notebook logs accuracy, e.g.:\n"
         "  mlflow.log_metric('test_acc', accuracy)"
     )

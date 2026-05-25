@@ -11,7 +11,7 @@ data:
   random_seed: 42
 
 mlflow:
-  experiment_name: "ai-image-detector"
+  experiment_name: "efficientnet-b0-finetune"
   model_name: "ai-image-detector"
 
 api:
