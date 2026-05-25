@@ -112,7 +112,7 @@ Training runs once externally on Kaggle
 | Artefact | Where | Linked to |
 |----------|-------|-----------|
 | Source code | Git | commit SHA |
-| Dataset | DVC (DagsHub S3) | `.dvc` file in Git |
+| Dataset | DVC (DagsHub) | `.dvc` file in Git |
 | Model weights (`.pt`) | DVC + MLflow artefact store | MLflow run ID |
 | Hyperparameters + metrics | MLflow tracking server | MLflow run ID |
 | Exported model (`.onnx`) | MLflow artefact store | MLflow run ID |
@@ -129,7 +129,7 @@ Training runs once externally on Kaggle
 > Requires [Docker Desktop](https://www.docker.com/products/docker-desktop/) running.
 
 ```bash
-git clone https://github.com/495temych/ai-image-detector.git
+git clone https://github.com/marcosncosta1/ai-image-detector.git
 cd ai-image-detector
 docker compose up --build
 ```
@@ -145,7 +145,7 @@ Subsequent builds use cached layers and take under 30 seconds.
 ### Option B — Local (Python + Node.js)
 
 ```bash
-git clone https://github.com/495temych/ai-image-detector.git
+git clone https://github.com/marcosncosta1/ai-image-detector.git
 cd ai-image-detector
 conda env create -f env.yaml
 conda activate mlops-img
@@ -287,7 +287,7 @@ ai-image-detector/
 · Kaggle · `tristanzhang32` · 60,000 images · Binary: `real` / `fake`
 · Academic use only.
 
-**Splits stored in DagsHub S3:**
+**Splits stored in DagsHub:**
 
 ```
 data/
