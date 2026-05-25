@@ -481,56 +481,102 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
 
 /* ── PRINT / PDF EXPORT ──────────────────────────────────────────────────── */
 @media print {
-  /* 1920×1080 native — no scaling needed, Chrome maps px→pt at 96dpi */
-  @page { size: 1920px 1080px; margin: 0; }
+  @page {
+    size: 297mm 167.25mm; /* 16:9 A4-width */
+    margin: 0;
+  }
 
   html, body {
+    width: 297mm;
+    height: 167.25mm;
+    background: #000;
+  }
+
+  /* hide navigation controls */
+  #prev-btn, #next-btn, #slide-counter,
+  [id$="-btn"], button { display: none !important; }
+
+  /* show every slide, one per page */
+  .slide {
+    display: flex !important;
+    position: relative !important;
+    width: 297mm !important;
+    height: 167.25mm !important;
+    min-height: unset !important;
+    page-break-after: always;
+    break-after: page;
+    overflow: hidden;
+  }
+
+  /* no trailing blank page after last slide */
+  .slide:last-of-type {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  #deck-wrapper {
+    width: 297mm;
+  }
+}
+</style>
+
+<style id="print-override">
+@media print {
+  @page {
+    size: 1920px 1080px;
+    margin: 0;
+  }
+
+  html {
+    width: 1920px !important;
+    height: auto !important;
+    overflow: visible !important;
+    background: #000 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body {
     width: 1920px !important;
     height: auto !important;
     overflow: visible !important;
     background: #000 !important;
   }
 
-  /* undo the fixed/flex centering wrapper */
   #deck-wrapper {
     position: static !important;
-    inset: auto !important;
     display: block !important;
     width: 1920px !important;
-    height: auto !important;
-    background: #000 !important;
+    inset: auto !important;
   }
 
-  /* undo the JS-applied transform (beforeprint handler also clears inline style) */
   #deck-scaler {
     width: 1920px !important;
     height: auto !important;
     transform: none !important;
     position: static !important;
-    left: auto !important;
-    top: auto !important;
+    left: 0 !important;
+    top: 0 !important;
   }
 
-  /* hide navigation */
-  #nav-hint, button { display: none !important; }
-
-  /* one slide per page */
   .slide {
     display: flex !important;
-    position: relative !important;
     width: 1920px !important;
     height: 1080px !important;
+    break-after: page !important;
+    page-break-after: always !important;
     overflow: hidden !important;
-    page-break-after: always;
-    break-after: page;
   }
 
-  .slide:last-of-type {
-    page-break-after: avoid;
-    break-after: avoid;
+  .slide:last-child {
+    break-after: avoid !important;
+    page-break-after: avoid !important;
   }
+
+  #nav-hint { display: none !important; }
 }
 </style>
+
 </head>
 <body>
 
@@ -1529,18 +1575,6 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
     const dx = e.changedTouches[0].clientX - tx;
     if (Math.abs(dx) > 40) go(dx < 0 ? cur + 1 : cur - 1);
   });
-
-  /* ── PDF print support ──────────────────────────────────────────────────
-     beforeprint fires when Cmd+P / Chrome headless --print-to-pdf begins.
-     We clear the JS-applied inline styles so @media print CSS takes over:
-     – #deck-wrapper: remove position:fixed so slides stack normally
-     – #deck-scaler:  remove transform:scale(…) so slides render at 1920px  */
-  window.addEventListener('beforeprint', function () {
-    document.getElementById('deck-wrapper').removeAttribute('style');
-    document.getElementById('deck-scaler').removeAttribute('style');
-    slides.forEach(s => s.removeAttribute('style'));
-  });
-  window.addEventListener('afterprint', function () { scale(); });
 })();
 </script>
 </body>
