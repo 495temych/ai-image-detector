@@ -6,7 +6,7 @@
 # on Kaggle and its weights pushed to DVC/DagsHub.
 #
 # Required GitHub secrets:
-#   DAGSHUB_TOKEN  — DagsHub personal access token (for DVC pull + MLflow)
+#   DAGSHUB_USER_TOKEN — DagsHub personal access token (for DVC pull + MLflow)
 #   KAGGLE_USERNAME / KAGGLE_KEY — only needed if running data prep here
 # ──────────────────────────────────────────────────────────────────────────────
 name: MLOps Pipeline
@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
 
 env:
-  DAGSHUB_USER_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+  DAGSHUB_USER_TOKEN: ${{ secrets.DAGSHUB_USER_TOKEN }}
 
 jobs:
   # ────────────────────────────────────────────────────────────────
@@ -39,10 +39,17 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Configure DVC remote credentials
+        env:
+          DAGSHUB_USER_TOKEN: ${{ secrets.DAGSHUB_USER_TOKEN }}
         run: |
+          if [ -z "$DAGSHUB_USER_TOKEN" ]; then
+            echo "❌ DAGSHUB_USER_TOKEN secret is not set. Add it under:"
+            echo "   GitHub repo → Settings → Secrets and variables → Actions → New repository secret"
+            exit 1
+          fi
           dvc remote modify dagshub --local auth basic
           dvc remote modify dagshub --local user marcosncosta1
-          dvc remote modify dagshub --local password ${{ secrets.DAGSHUB_TOKEN }}
+          dvc remote modify dagshub --local password "$DAGSHUB_USER_TOKEN"
 
       - name: Pull data & model weights from DagsHub
         run: dvc pull
