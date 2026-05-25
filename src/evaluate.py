@@ -85,7 +85,6 @@ def run_evaluation(config: dict) -> dict:
     This replaces re-running inference: the authoritative metrics were logged
     during training on Kaggle and live in MLflow. CI reads and gates on them.
     """
-    import mlflow                              # noqa: PLC0415
     from mlflow.tracking import MlflowClient  # noqa: PLC0415
 
     model_name = config["mlflow"]["model_name"]
@@ -101,7 +100,7 @@ def run_evaluation(config: dict) -> dict:
 
     metrics = fetch_run_metrics(client, mv.run_id)
 
-    print(f"\n📊 Metrics from training run:")
+    print("\n📊 Metrics from training run:")
     for k, v in metrics.items():
         print(f"   {k}: {v:.4f}" if isinstance(v, float) else f"   {k}: {v}")
 
@@ -114,13 +113,13 @@ def run_evaluation(config: dict) -> dict:
 
     print(f"\n🎯 Accuracy {accuracy:.4f} vs threshold {threshold}")
     if accuracy < threshold:
-        print(f"❌ Below threshold — model will NOT be promoted.")
+        print("❌ Below threshold — model will NOT be promoted.")
         sys.exit(1)
-    print(f"✅ Passes threshold — proceeding to register step.")
+    print("✅ Passes threshold — proceeding to register step.")
 
     # Write run_id for downstream jobs (register, export)
     Path("mlflow_run_id.txt").write_text(mv.run_id)
-    print(f"\nRun ID written to mlflow_run_id.txt")
+    print("\nRun ID written to mlflow_run_id.txt")
 
     return metrics
 
