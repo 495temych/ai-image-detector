@@ -1,86 +1,100 @@
+"""Export the Production EfficientNet-B0 model to ONNX.
+
+Loads the best_weights.pt from DVC (already pulled by the CI workflow),
+exports to ONNX, and logs the artefact back to the MLflow run so the
+Docker build step can pick it up as a CI artefact.
+"""
 import argparse
 import json
 from pathlib import Path
 
-import dagshub
-import yaml
-import torch
-import mlflow
-import mlflow.transformers
-from PIL import Image
-from transformers import AutoFeatureExtractor, AutoModelForImageClassification
-from mlflow.tracking import MlflowClient
-
 
 def export_onnx(
-    model_name: str,
+    weights_path: Path,
     output_dir: Path,
     run_id: str | None = None,
 ) -> tuple[Path, Path]:
-    """Download Production model from MLflow and export to ONNX.
+    """Export EfficientNet-B0 weights to ONNX and log to MLflow.
 
-    Returns (onnx_path, labels_path).
+    Args:
+        weights_path: path to best_weights.pt (from DVC pull).
+        output_dir:   directory to write model.onnx and labels.json.
+        run_id:       MLflow run to attach the artefact to (optional).
+
+    Returns:
+        (onnx_path, labels_path)
     """
-    client = MlflowClient()
+    import mlflow                      # noqa: PLC0415
+    import torch                       # noqa: PLC0415
+    import torchvision.models as tvm  # noqa: PLC0415
+
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    if run_id is None:
-        versions = client.get_latest_versions(model_name, stages=["Production"])
-        if not versions:
-            raise RuntimeError(f"No Production model found for '{model_name}'")
-        run_id = versions[0].run_id
-
-    model_uri = f"models:/{model_name}/Production"
-    local_path = mlflow.artifacts.download_artifacts(model_uri)
-
-    feature_extractor = AutoFeatureExtractor.from_pretrained(local_path)
-    model = AutoModelForImageClassification.from_pretrained(local_path)
+    # ── rebuild model architecture (must match training) ──────────────────
+    model = tvm.efficientnet_b0(weights=None)
+    model.classifier = torch.nn.Sequential(
+        torch.nn.Dropout(p=0.2, inplace=True),
+        torch.nn.Linear(1280, 512),
+        torch.nn.ReLU(),
+        torch.nn.Linear(512, 1),
+    )
+    state = torch.load(str(weights_path), map_location="cpu")
+    model.load_state_dict(state)
     model.eval()
 
-    id2label = model.config.id2label
+    # ── labels ───────────────────────────────────────────────────────────
+    labels = {"0": "real", "1": "fake"}
     labels_path = output_dir / "labels.json"
-    labels_path.write_text(json.dumps({str(k): v for k, v in id2label.items()}))
+    labels_path.write_text(json.dumps(labels))
 
-    dummy_image = Image.new("RGB", (224, 224))
-    inputs = feature_extractor(images=dummy_image, return_tensors="pt")
-    dummy_pixel_values = inputs["pixel_values"]
-
+    # ── ONNX export ───────────────────────────────────────────────────────
+    dummy = torch.zeros(1, 3, 224, 224)
     onnx_path = output_dir / "model.onnx"
     torch.onnx.export(
         model,
-        dummy_pixel_values,
+        dummy,
         str(onnx_path),
-        input_names=["pixel_values"],
-        output_names=["logits"],
+        input_names=["input"],
+        output_names=["output"],
         opset_version=14,
         dynamic_axes={
-            "pixel_values": {0: "batch_size"},
-            "logits": {0: "batch_size"},
+            "input":  {0: "batch_size"},
+            "output": {0: "batch_size"},
         },
     )
-
-    with mlflow.start_run(run_id=run_id):
-        mlflow.log_artifact(str(onnx_path), artifact_path="onnx")
-        mlflow.log_artifact(str(labels_path), artifact_path="onnx")
-
-    print(f"ONNX model → {onnx_path}")
+    print(f"ONNX model → {onnx_path}  ({onnx_path.stat().st_size // 1024} KB)")
     print(f"Labels     → {labels_path}")
+
+    # ── log artefact to MLflow run ────────────────────────────────────────
+    if run_id:
+        with mlflow.start_run(run_id=run_id):
+            mlflow.log_artifact(str(onnx_path),   artifact_path="onnx")
+            mlflow.log_artifact(str(labels_path), artifact_path="onnx")
+        print(f"Artefacts logged to MLflow run {run_id}")
+
     return onnx_path, labels_path
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--config", default="configs/eval_config.yaml")
-    parser.add_argument("--output-dir", default=".")
-    parser.add_argument("--run-id", default=None)
+    import dagshub  # noqa: PLC0415
+    import yaml     # noqa: PLC0415
+
+    parser = argparse.ArgumentParser(description="Export EfficientNet-B0 to ONNX")
+    parser.add_argument("--config",      default="configs/eval_config.yaml")
+    parser.add_argument("--weights",     default="models/efficientnet_v1/best_weights.pt",
+                        help="Path to best_weights.pt (from dvc pull models)")
+    parser.add_argument("--output-dir",  default="api/")
+    parser.add_argument("--run-id",      default=None,
+                        help="MLflow run ID to attach artefacts to")
     args = parser.parse_args()
 
     with open(args.config) as f:
-        config = yaml.safe_load(f)
+        config = yaml.safe_load(f)  # noqa: F841 (kept for future use)
 
     dagshub.init(repo_owner="marcosncosta1", repo_name="ai-image-detector", mlflow=True)
+
     export_onnx(
-        model_name=config["mlflow"]["model_name"],
+        weights_path=Path(args.weights),
         output_dir=Path(args.output_dir),
         run_id=args.run_id,
     )

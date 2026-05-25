@@ -124,10 +124,24 @@ jobs:
         with:
           name: mlflow-run-id
 
-      - name: Export ONNX from Production model
+      - name: Configure DVC remote credentials
+        env:
+          DAGSHUB_USER_TOKEN: ${{ secrets.DAGSHUB_USER_TOKEN }}
+        run: |
+          dvc remote modify dagshub --local auth basic
+          dvc remote modify dagshub --local user marcosncosta1
+          dvc remote modify dagshub --local password "$DAGSHUB_USER_TOKEN"
+
+      - name: Pull model weights from DagsHub
+        run: dvc pull models
+
+      - name: Export ONNX from DVC model weights
+        # Loads best_weights.pt (from dvc pull) and exports to ONNX.
+        # Logs the artefact back to the MLflow training run for traceability.
         run: |
           python src/export_onnx.py \
             --config configs/eval_config.yaml \
+            --weights models/efficientnet_v1/best_weights.pt \
             --run-id "$(cat mlflow_run_id.txt)" \
             --output-dir api/
 
