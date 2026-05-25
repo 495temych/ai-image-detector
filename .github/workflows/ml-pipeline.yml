@@ -51,10 +51,16 @@ jobs:
           dvc remote modify dagshub --local user marcosncosta1
           dvc remote modify dagshub --local password "$DAGSHUB_USER_TOKEN"
 
-      - name: Pull data & model weights from DagsHub
-        run: dvc pull
+      - name: Pull model weights from DagsHub
+        # Data never leaves Kaggle — only model artefacts are tracked in DVC.
+        # evaluate.py reads metrics directly from the MLflow Model Registry,
+        # so no dataset pull is required here.
+        run: dvc pull models
 
-      - name: Run evaluation
+      - name: Fetch metrics from MLflow registry & gate
+        # evaluate.py queries the MLflow Model Registry for the latest
+        # registered model version, reads its training metrics, and exits
+        # non-zero if accuracy < threshold. No re-inference, no dataset needed.
         id: run_eval
         run: |
           python src/evaluate.py --config configs/eval_config.yaml

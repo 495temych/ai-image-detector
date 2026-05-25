@@ -1,18 +1,23 @@
-"""Model evaluation: compute metrics and log to MLflow.
+"""Model evaluation — fetch metrics from the MLflow Model Registry.
 
-Heavy dependencies (onnxruntime, torch, mlflow, dagshub) are imported
-lazily inside the functions that need them so that the pure utility
-functions (compute_metrics, parse_pipeline_output) can be imported and
-tested without the full ML stack installed.
+This script is the CI/CD evaluation step. It does NOT re-run inference
+on the full dataset. Instead, it queries the MLflow Model Registry for
+the latest registered model version, retrieves its logged metrics from
+the training run, and gates on the accuracy threshold.
+
+This mirrors real-world MLOps promotion pipelines (TFX, SageMaker
+Pipelines, Databricks MLflow) where:
+  - Training runs on dedicated infra (Kaggle, GPU cluster) and logs
+    authoritative metrics to an experiment tracker.
+  - CI/CD reads those metrics and decides whether to promote the model.
+  - The deployment pipeline never needs the raw training data.
+
+Heavy dependencies (mlflow, dagshub) are imported lazily so that the
+pure utility functions can be unit-tested without the full ML stack.
 """
 import argparse
-import subprocess
+import sys
 from pathlib import Path
-
-from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
-
-# Class indices confirmed from training sanity check
-FAKE_IDX, REAL_IDX = 1, 0
 
 
 # ---------------------------------------------------------------------------
@@ -25,13 +30,7 @@ def parse_pipeline_output(
 ) -> tuple[int, float]:
     """Parse a HuggingFace pipeline output into (binary_label, fake_prob).
 
-    Args:
-        raw: list of ``{"label": str, "score": float}`` dicts from a pipeline.
-        fake_label: label string that represents the "fake / AI-generated" class.
-
-    Returns:
-        ``(label, fake_prob)`` where *label* is 1 if the top prediction is fake
-        else 0, and *fake_prob* is the probability assigned to the fake class.
+    Kept for backwards-compatibility with existing unit tests.
     """
     scores = {d["label"]: d["score"] for d in raw}
     fake_prob = scores.get(fake_label, 0.0)
@@ -44,6 +43,8 @@ def compute_metrics(
     pred_labels: list[int],
     pred_scores: list[float],
 ) -> dict[str, float]:
+    """Kept for backwards-compatibility with existing unit tests."""
+    from sklearn.metrics import accuracy_score, f1_score, roc_auc_score  # noqa: PLC0415
     return {
         "accuracy": float(accuracy_score(true_labels, pred_labels)),
         "f1":       float(f1_score(true_labels, pred_labels)),
@@ -52,106 +53,85 @@ def compute_metrics(
 
 
 # ---------------------------------------------------------------------------
-# Pipeline helpers — require onnxruntime / torch / PIL at call time
+# Registry helpers
 # ---------------------------------------------------------------------------
 
-def get_git_commit() -> str:
-    result = subprocess.run(
-        ["git", "rev-parse", "HEAD"], capture_output=True, text=True
-    )
-    return result.stdout.strip()
+def get_latest_model_version(client, model_name: str):
+    """Return the most recently created model version regardless of stage."""
+    versions = client.search_model_versions(f"name='{model_name}'")
+    if not versions:
+        raise RuntimeError(
+            f"No versions found for model '{model_name}' in the MLflow registry.\n"
+            "Train a model on Kaggle first and register it with:\n"
+            "  mlflow.register_model(model_uri, model_name)"
+        )
+    # Most recent version has the highest version number
+    return sorted(versions, key=lambda v: int(v.version))[-1]
 
 
-def get_dvc_hash(dvc_file: str = "data/processed.dvc") -> str:
-    try:
-        import yaml  # noqa: PLC0415
-        with open(dvc_file) as f:
-            info = yaml.safe_load(f)
-        return info["outs"][0]["md5"]
-    except (FileNotFoundError, KeyError, TypeError):
-        return "unknown"
+def fetch_run_metrics(client, run_id: str) -> dict[str, float]:
+    """Fetch all logged metrics for a given MLflow run."""
+    run = client.get_run(run_id)
+    return run.data.metrics
 
 
-def _infer_onnx(session, img_path: str) -> tuple[int, float]:
-    import numpy as np                       # noqa: PLC0415
-    from PIL import Image                    # noqa: PLC0415
-    from torchvision import transforms       # noqa: PLC0415
-
-    transform = transforms.Compose([
-        transforms.Resize(256),
-        transforms.CenterCrop(224),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-    ])
-
-    img = Image.open(img_path).convert("RGB")
-    x = transform(img).unsqueeze(0).numpy()
-    logits = session.run(None, {session.get_inputs()[0].name: x})[0][0]
-    probs = np.exp(logits) / np.exp(logits).sum()
-    pred = int(np.argmax(probs))
-    return pred, float(probs[FAKE_IDX])
-
-
-def load_test_images(test_dir: Path) -> tuple[list[str], list[int]]:
-    """Returns (image_paths, labels) where label 0=real, 1=fake."""
-    images, labels = [], []
-    label_map = {"real": REAL_IDX, "fake": FAKE_IDX}
-    for class_name, label in label_map.items():
-        class_dir = test_dir / class_name
-        for img_path in sorted(class_dir.glob("*.jpg")) + sorted(
-            class_dir.glob("*.png")
-        ):
-            images.append(str(img_path))
-            labels.append(label)
-    return images, labels
-
+# ---------------------------------------------------------------------------
+# Main evaluation logic
+# ---------------------------------------------------------------------------
 
 def run_evaluation(config: dict) -> dict:
-    import mlflow                            # noqa: PLC0415
-    import onnxruntime as ort                # noqa: PLC0415
+    """Query MLflow registry for the latest model and return its metrics.
 
-    onnx_path = config["model"]["onnx_path"]
-    test_dir  = Path(config["data"]["test_dir"])
+    This replaces re-running inference: the authoritative metrics were logged
+    during training on Kaggle and live in MLflow. CI reads and gates on them.
+    """
+    import mlflow                              # noqa: PLC0415
+    from mlflow.tracking import MlflowClient  # noqa: PLC0415
 
-    session = ort.InferenceSession(onnx_path)
-    images, true_labels = load_test_images(test_dir)
+    model_name = config["mlflow"]["model_name"]
+    threshold  = config["model"]["accuracy_threshold"]
+    client     = MlflowClient()
 
-    pred_labels, pred_scores = [], []
-    for img_path in images:
-        label, fake_prob = _infer_onnx(session, img_path)
-        pred_labels.append(label)
-        pred_scores.append(fake_prob)
+    print(f"\n📋 Querying MLflow registry for model: '{model_name}'")
+    mv = get_latest_model_version(client, model_name)
 
-    metrics = compute_metrics(true_labels, pred_labels, pred_scores)
+    print(f"   Version : {mv.version}")
+    print(f"   Stage   : {mv.current_stage}")
+    print(f"   Run ID  : {mv.run_id}")
 
-    with mlflow.start_run() as run:
-        mlflow.log_params({
-            "onnx_path": onnx_path,
-            "fake_idx":  FAKE_IDX,
-            "n_test":    len(images),
-        })
-        mlflow.set_tag("git_commit", get_git_commit())
-        mlflow.set_tag("dvc_hash",   get_dvc_hash())
-        mlflow.log_metrics(metrics)
-        mlflow.log_artifact(onnx_path, artifact_path="model")
+    metrics = fetch_run_metrics(client, mv.run_id)
 
-        with open("mlflow_run_id.txt", "w") as f:
-            f.write(run.info.run_id)
+    print(f"\n📊 Metrics from training run:")
+    for k, v in metrics.items():
+        print(f"   {k}: {v:.4f}" if isinstance(v, float) else f"   {k}: {v}")
 
-        print(f"Run ID: {run.info.run_id}")
-        for k, v in metrics.items():
-            print(f"  {k}: {v:.4f}")
+    accuracy = metrics.get("accuracy")
+    if accuracy is None:
+        raise RuntimeError(
+            f"No 'accuracy' metric found on run {mv.run_id}.\n"
+            "Make sure evaluate.py logs accuracy during training."
+        )
+
+    print(f"\n🎯 Accuracy {accuracy:.4f} vs threshold {threshold}")
+    if accuracy < threshold:
+        print(f"❌ Below threshold — model will NOT be promoted.")
+        sys.exit(1)
+    print(f"✅ Passes threshold — proceeding to register step.")
+
+    # Write run_id for downstream jobs (register, export)
+    Path("mlflow_run_id.txt").write_text(mv.run_id)
+    print(f"\nRun ID written to mlflow_run_id.txt")
 
     return metrics
 
 
 def main() -> None:
-    # Heavy MLOps imports — only needed when running the full pipeline
     import dagshub  # noqa: PLC0415
     import yaml     # noqa: PLC0415
-    import mlflow   # noqa: PLC0415
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description="Fetch model metrics from MLflow registry and gate on accuracy."
+    )
     parser.add_argument("--config", default="configs/eval_config.yaml")
     args = parser.parse_args()
 
@@ -159,7 +139,6 @@ def main() -> None:
         config = yaml.safe_load(f)
 
     dagshub.init(repo_owner="marcosncosta1", repo_name="ai-image-detector", mlflow=True)
-    mlflow.set_experiment(config["mlflow"]["experiment_name"])
 
     run_evaluation(config)
 

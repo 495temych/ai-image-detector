@@ -15,35 +15,34 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --black:     #080808;
-  --dark:      #0d0d12;
-  --panel:     #111118;
-  --border:    rgba(200,255,0,0.18);
-  --white:     #f0ede6;
-  --white-dim: rgba(240,237,230,0.62);
-  --white-faint:rgba(240,237,230,0.35);
-  --neon:      #c8ff00;
-  --neon-dim:  rgba(200,255,0,0.15);
-  --neon-glow: rgba(200,255,0,0.08);
-  --blue:      #3b82f6;
-  --teal:      #14b8a6;
-  --orange:    #f97316;
-  --pink:      #ec4899;
-  --serif:     'DM Serif Display', Georgia, serif;
-  --sans:      'Inter', system-ui, sans-serif;
-  --mono:      'Space Mono', 'Courier New', monospace;
+  --black:      #080808;
+  --dark:       #0d0d12;
+  --panel:      #111118;
+  --border:     rgba(200,255,0,0.18);
+  --white:      #f0ede6;
+  --white-dim:  rgba(240,237,230,0.62);
+  --faint:      rgba(240,237,230,0.40);
+  --neon:       #c8ff00;
+  --neon-dim:   rgba(200,255,0,0.15);
+  --neon-glow:  rgba(200,255,0,0.08);
+  --blue:       #3b82f6;
+  --teal:       #14b8a6;
+  --orange:     #f97316;
+  --pink:       #ec4899;
+  --serif:      'DM Serif Display', Georgia, serif;
+  --sans:       'Inter', system-ui, sans-serif;
+  --mono:       'Space Mono', 'Courier New', monospace;
 
-  /* slide dimensions — 16:9 */
+  /* slide canvas — 16:9 */
   --W: 1920px;
   --H: 1080px;
-  --scale: 1;
 }
 
 html { background: #000; }
 body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
 
 /* ──────────────────────────────────────────
-   DECK VIEWPORT SCALER
+   DECK SCALER
 ────────────────────────────────────────── */
 #deck-wrapper {
   position: fixed;
@@ -52,1951 +51,1432 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
   align-items: center;
   justify-content: center;
 }
-
-#deck {
+#deck-scaler {
   width: var(--W);
   height: var(--H);
-  position: relative;
-  transform-origin: center center;
-  /* JS will set transform: scale(...) */
+  transform-origin: top left;
 }
 
 /* ──────────────────────────────────────────
    SLIDE BASE
 ────────────────────────────────────────── */
 .slide {
-  position: absolute;
-  inset: 0;
+  display: none;
   width: var(--W);
   height: var(--H);
-  background: var(--dark);
-  color: var(--white);
-  font-family: var(--sans);
-  display: none;
+  background: var(--black);
+  flex-direction: column;
+  position: relative;
   overflow: hidden;
 }
 .slide.active { display: flex; }
 
-/* Side accent bar on every content slide */
-.slide:not(.cover-slide)::before {
+/* Corner accent */
+.slide::before {
   content: '';
   position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 6px;
+  top: 0; left: 0;
+  width: 6px; height: 100%;
   background: var(--neon);
+  opacity: 0.9;
 }
-
-/* Subtle grain overlay */
-.slide::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
-  background-size: 256px;
-  opacity: 0.5;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.slide > * { position: relative; z-index: 1; }
 
 /* ──────────────────────────────────────────
-   SLIDE HEADER (top bar)
+   HEADER
 ────────────────────────────────────────── */
 .slide-header {
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 88px;
-  background: rgba(0,0,0,0.35);
-  border-bottom: 1px solid var(--border);
+  flex: 0 0 auto;
   display: flex;
-  align-items: center;
-  padding: 0 64px 0 72px;
-  gap: 20px;
+  align-items: baseline;
+  gap: 28px;
+  padding: 44px 64px 0 72px;
 }
-.slide-header .tag {
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.18em;
-  color: var(--neon);
-  text-transform: uppercase;
-  border: 1px solid rgba(200,255,0,0.4);
-  padding: 3px 10px;
-}
-.slide-header h2 {
-  font-family: var(--serif);
-  font-size: 42px;
-  font-weight: 400;
-  color: var(--white);
-  letter-spacing: -0.01em;
-}
-.slide-header .zhaw-badge {
-  margin-left: auto;
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  color: var(--white-faint);
-}
-.slide-header .slide-num {
+.slide-num {
   font-family: var(--mono);
   font-size: 13px;
-  color: rgba(200,255,0,0.5);
-  min-width: 48px;
-  text-align: right;
+  letter-spacing: 0.18em;
+  color: var(--neon);
+}
+.slide-title {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 52px;
+  color: var(--white);
+  line-height: 1.05;
+}
+.slide-sub {
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  color: var(--faint);
+  text-transform: uppercase;
+  align-self: flex-end;
+  padding-bottom: 6px;
 }
 
 /* ──────────────────────────────────────────
-   SLIDE BODY
+   SLIDE BODY — vertically centred by default
 ────────────────────────────────────────── */
 .slide-body {
-  position: absolute;
-  top: 88px; left: 6px; right: 0; bottom: 52px;
-  padding: 48px 64px 0 72px;
+  flex: 1;
   display: flex;
+  flex-direction: row;
+  align-items: center;
   gap: 48px;
+  padding: 32px 64px 36px 72px;
+}
+.slide-body.col {
+  flex-direction: column;
+  justify-content: center;
+  align-items: stretch;
+  gap: 32px;
+}
+.slide-body.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 40px;
 }
 
+/* column helpers */
+.col-left, .col-right { display: flex; flex-direction: column; justify-content: center; }
+.col-left  { flex: 1; }
+.col-right { flex: 1; }
+.col-55 { flex: 0 0 55%; display: flex; flex-direction: column; justify-content: center; }
+.col-45 { flex: 0 0 45%; display: flex; flex-direction: column; justify-content: center; }
+.col-60 { flex: 0 0 60%; display: flex; flex-direction: column; justify-content: center; }
+.col-40 { flex: 0 0 40%; display: flex; flex-direction: column; justify-content: center; }
+
 /* ──────────────────────────────────────────
-   SLIDE FOOTER
+   FOOTER
 ────────────────────────────────────────── */
 .slide-footer {
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  height: 52px;
-  background: rgba(0,0,0,0.25);
-  border-top: 1px solid rgba(200,255,0,0.1);
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
-  padding: 0 64px;
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  color: var(--white-faint);
-  gap: 24px;
+  justify-content: space-between;
+  padding: 0 64px 28px 72px;
 }
-.slide-footer .sep { opacity: 0.3; }
-.slide-footer .right { margin-left: auto; color: rgba(200,255,0,0.4); }
+.footer-team {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--faint);
+  letter-spacing: 0.1em;
+}
+.footer-pager {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--faint);
+}
 
 /* ──────────────────────────────────────────
-   TYPOGRAPHY HELPERS
+   DIVIDER
 ────────────────────────────────────────── */
-.section-label {
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 0 72px;
+  flex: 0 0 1px;
+}
+
+/* ──────────────────────────────────────────
+   COMMON TEXT ELEMENTS
+────────────────────────────────────────── */
+.label {
   font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.2em;
-  color: var(--neon);
+  font-size: 12px;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
+  color: var(--neon);
   margin-bottom: 14px;
 }
-.h1 {
-  font-family: var(--serif);
-  font-size: 64px;
-  font-weight: 400;
-  color: var(--white);
-  line-height: 1.0;
-  letter-spacing: -0.02em;
-  margin-bottom: 24px;
-}
-.h2 {
-  font-family: var(--serif);
-  font-size: 48px;
-  font-weight: 400;
-  color: var(--white);
-  line-height: 1.1;
-  margin-bottom: 20px;
-}
-.h3 {
-  font-family: var(--sans);
-  font-size: 26px;
-  font-weight: 600;
-  color: var(--white);
-  margin-bottom: 16px;
-}
-.lead {
-  font-size: 26px;
-  font-weight: 400;
-  color: var(--white-dim);
-  line-height: 1.6;
-  margin-bottom: 28px;
-}
 .body-text {
-  font-size: 22px;
-  color: var(--white-dim);
+  font-family: var(--sans);
+  font-size: 24px;
   line-height: 1.65;
+  color: var(--white-dim);
 }
-.neon { color: var(--neon); }
-.dim  { color: var(--white-faint); }
+.body-text.sm { font-size: 20px; }
 
-/* Bullet list */
-.blist {
+.mono-note {
+  font-family: var(--mono);
+  font-size: 16px;
+  color: var(--faint);
+  line-height: 1.6;
+}
+.mono-note.sm { font-size: 13px; }
+
+/* ──────────────────────────────────────────
+   STAT BLOCK
+────────────────────────────────────────── */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  border: 1px solid var(--border);
+}
+.stat-cell {
+  padding: 28px 32px;
+  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.stat-val {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 52px;
+  color: var(--neon);
+  line-height: 1;
+}
+.stat-lbl {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+/* ──────────────────────────────────────────
+   LIST / BULLET
+────────────────────────────────────────── */
+.bullet-list {
   list-style: none;
   display: flex;
   flex-direction: column;
   gap: 18px;
 }
-.blist li {
-  font-size: 22px;
+.bullet-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  font-family: var(--sans);
+  font-size: 24px;
   color: var(--white-dim);
   line-height: 1.5;
-  padding-left: 24px;
-  position: relative;
 }
-.blist li::before {
+.bullet-list li::before {
   content: '▸';
-  position: absolute;
-  left: 0;
   color: var(--neon);
-  font-size: 14px;
-  top: 4px;
+  flex: 0 0 auto;
+  margin-top: 2px;
 }
-.blist li strong {
-  color: var(--white);
-  font-weight: 600;
+.bullet-list.sm li { font-size: 20px; }
+
+/* ──────────────────────────────────────────
+   PANEL / CODE BOX
+────────────────────────────────────────── */
+.panel-box {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 28px 32px;
 }
-.blist li .mono-tag {
+.code-block {
   font-family: var(--mono);
-  font-size: 14px;
-  background: rgba(200,255,0,0.1);
-  border: 1px solid rgba(200,255,0,0.3);
+  font-size: 18px;
+  color: var(--white-dim);
+  line-height: 1.7;
+}
+.code-block .kw  { color: var(--neon); }
+.code-block .cm  { color: var(--faint); }
+.code-block .str { color: var(--teal); }
+
+/* ──────────────────────────────────────────
+   PIPELINE / FLOW MAP  (pitch deck §03)
+────────────────────────────────────────── */
+.flow-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  border-top: 1px solid rgba(200,255,0,0.2);
+  border-left: 1px solid rgba(200,255,0,0.2);
+  margin: 0 64px 0 72px;
+}
+.flow-cell {
+  border-right: 1px solid rgba(200,255,0,0.2);
+  border-bottom: 1px solid rgba(200,255,0,0.2);
+  padding: 32px 36px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+}
+.flow-cell .fc-num    { font-family: var(--mono); font-size: 12px; letter-spacing: 0.18em; color: var(--neon); }
+.flow-cell .fc-icon   { height: 80px; width: auto; object-fit: contain; display: block; }
+.flow-cell .fc-name   { font-family: var(--serif); font-style: italic; font-size: 34px; color: var(--white); line-height: 1.1; }
+.flow-cell .fc-detail { font-family: var(--mono); font-size: 14px; color: var(--faint); line-height: 1.55; }
+
+/* ──────────────────────────────────────────
+   COMPONENTS / EVIDENCE GRID  (pitch deck §04)
+────────────────────────────────────────── */
+.ev-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  border-top: 1px solid rgba(200,255,0,0.2);
+  border-left: 1px solid rgba(200,255,0,0.2);
+  margin: 0 64px 0 72px;
+}
+.ev-cell {
+  border-right: 1px solid rgba(200,255,0,0.2);
+  border-bottom: 1px solid rgba(200,255,0,0.2);
+  padding: 22px 26px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+}
+.ev-cell.empty { background: rgba(200,255,0,0.02); }
+.ev-cell .ev-top  { display: flex; align-items: center; gap: 14px; margin-bottom: 4px; }
+.ev-cell .ev-icon { height: 36px; width: 36px; object-fit: contain; flex: 0 0 auto; }
+.ev-cell .ev-name { font-family: var(--serif); font-style: italic; font-size: 26px; color: var(--white); }
+.ev-cell .ev-role { font-family: var(--mono); font-size: 10px; letter-spacing: 0.2em; color: var(--neon); text-transform: uppercase; }
+.ev-cell .ev-desc { font-family: var(--mono); font-size: 13px; color: var(--faint); line-height: 1.5; }
+
+/* ──────────────────────────────────────────
+   DVC FLOW DIAGRAM
+────────────────────────────────────────── */
+.dvc-flow {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+.dvc-node {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 18px 24px;
+  text-align: center;
+  min-width: 160px;
+}
+.dvc-node .dn-label { font-family: var(--mono); font-size: 13px; color: var(--neon); margin-bottom: 6px; }
+.dvc-node .dn-sub   { font-family: var(--mono); font-size: 11px; color: var(--faint); line-height: 1.4; }
+.dvc-arrow {
+  font-family: var(--mono);
+  font-size: 22px;
   color: var(--neon);
-  padding: 2px 8px;
-  border-radius: 3px;
-  vertical-align: middle;
+  padding: 0 12px;
+  flex: 0 0 auto;
 }
 
 /* ──────────────────────────────────────────
-   PANELS / CARDS
+   PIPELINE STEP LIST
 ────────────────────────────────────────── */
-.panel {
-  background: var(--panel);
-  border: 1px solid rgba(200,255,0,0.14);
-  padding: 28px 32px;
+.step-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
-.panel.accent {
-  border-color: rgba(200,255,0,0.35);
-  background: rgba(200,255,0,0.04);
+.step-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
 }
-.panel-title {
+.step-row:first-child { border-top: 1px solid var(--border); }
+.step-num {
   font-family: var(--mono);
-  font-size: 12px;
-  letter-spacing: 0.18em;
+  font-size: 11px;
   color: var(--neon);
-  text-transform: uppercase;
-  margin-bottom: 20px;
+  letter-spacing: 0.12em;
+  padding: 16px 20px 16px 0;
+  flex: 0 0 48px;
+  display: flex;
+  align-items: center;
+}
+.step-name {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 22px;
+  color: var(--white);
+  padding: 14px 24px;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  flex: 0 0 220px;
+  display: flex;
+  align-items: center;
+}
+.step-detail {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--faint);
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  line-height: 1.5;
 }
 
-/* Metric card */
-.metric-card {
+/* ──────────────────────────────────────────
+   TAG PILL
+────────────────────────────────────────── */
+.tag {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: var(--neon-dim);
+  border: 1px solid var(--border);
+  color: var(--neon);
+  padding: 4px 12px;
+  border-radius: 2px;
+}
+
+/* ──────────────────────────────────────────
+   RESULTS METRIC ROW
+────────────────────────────────────────── */
+.metric-row {
+  display: flex;
+  gap: 2px;
+}
+.metric-box {
+  flex: 1;
   background: var(--panel);
   border: 1px solid var(--border);
-  padding: 24px 28px;
+  padding: 28px 24px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 4px;
-}
-.metric-card .metric-val {
-  font-family: var(--serif);
-  font-size: 64px;
-  color: var(--neon);
-  line-height: 1;
-}
-.metric-card .metric-label {
-  font-family: var(--mono);
-  font-size: 13px;
-  letter-spacing: 0.14em;
-  color: var(--white-dim);
-  text-transform: uppercase;
-}
-.metric-card .metric-sub {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--white-faint);
-}
-
-/* ──────────────────────────────────────────
-   TOOL BADGE
-────────────────────────────────────────── */
-.tool-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 32px;
-}
-.tool-badge {
-  display: flex;
-  align-items: center;
   gap: 8px;
-  background: rgba(240,237,230,0.05);
-  border: 1px solid rgba(240,237,230,0.12);
-  padding: 6px 16px 6px 10px;
-  font-family: var(--mono);
-  font-size: 13px;
-  letter-spacing: 0.1em;
-  color: var(--white-dim);
 }
-.tool-badge img {
-  height: 22px;
-  width: auto;
-  object-fit: contain;
-}
-.tool-badge.neon-badge {
-  border-color: rgba(200,255,0,0.35);
-  background: rgba(200,255,0,0.06);
-  color: var(--neon);
-}
+.metric-box .m-val { font-family: var(--serif); font-style: italic; font-size: 56px; color: var(--neon); line-height: 1; }
+.metric-box .m-lbl { font-family: var(--mono); font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--faint); }
 
 /* ──────────────────────────────────────────
-   FLOW DIAGRAM
+   COVER SLIDE SPECIAL
 ────────────────────────────────────────── */
-.flow {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  flex-wrap: wrap;
-}
-.flow-box {
-  background: var(--panel);
-  border: 1px solid rgba(200,255,0,0.25);
-  padding: 18px 24px;
-  font-family: var(--mono);
-  font-size: 14px;
-  letter-spacing: 0.08em;
-  color: var(--white);
-  text-align: center;
-  min-width: 140px;
-  position: relative;
-}
-.flow-box .flow-label {
-  font-size: 10px;
-  letter-spacing: 0.15em;
-  color: var(--neon);
-  margin-bottom: 6px;
-  text-transform: uppercase;
-}
-.flow-box .flow-tool {
-  font-size: 16px;
-  font-weight: 700;
-}
-.flow-arrow {
-  font-size: 24px;
-  color: rgba(200,255,0,0.6);
-  padding: 0 8px;
-  flex-shrink: 0;
-}
-.flow-box.active-box {
-  border-color: var(--neon);
-  background: rgba(200,255,0,0.08);
-}
-
-/* CI jobs */
-.ci-job {
-  display: flex;
-  align-items: center;
-  gap: 0;
-}
-.ci-step {
-  background: var(--panel);
-  border: 1.5px solid rgba(200,255,0,0.3);
-  padding: 16px 22px;
-  font-family: var(--mono);
-  font-size: 15px;
-  color: var(--white);
-  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 0 100%, 16px 50%);
-  min-width: 160px;
-  text-align: center;
-}
-.ci-step:first-child {
-  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 0 100%);
-}
-.ci-step.neon-step {
-  background: rgba(200,255,0,0.1);
-  border-color: var(--neon);
-  color: var(--neon);
-}
-
-/* ──────────────────────────────────────────
-   CODE BLOCK
-────────────────────────────────────────── */
-.code-block {
-  background: #000;
-  border: 1px solid rgba(200,255,0,0.2);
-  border-left: 3px solid var(--neon);
-  padding: 24px 28px;
-  font-family: var(--mono);
-  font-size: 17px;
-  line-height: 1.75;
-  color: rgba(240,237,230,0.85);
-  overflow: hidden;
-}
-.code-block .kw   { color: #c8ff00; }
-.code-block .str  { color: #86efac; }
-.code-block .cmt  { color: rgba(240,237,230,0.3); }
-.code-block .num  { color: #93c5fd; }
-.code-block .url  { color: #7dd3fc; text-decoration: underline; }
-
-/* Endpoint table */
-.ep-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-.ep-table td, .ep-table th {
-  padding: 14px 20px;
-  font-size: 20px;
-  font-family: var(--mono);
-  border-bottom: 1px solid rgba(240,237,230,0.08);
-}
-.ep-table th {
-  font-size: 13px;
-  letter-spacing: 0.14em;
-  color: var(--neon);
-  text-transform: uppercase;
-  text-align: left;
-  border-bottom-color: rgba(200,255,0,0.25);
-}
-.ep-table td:first-child { width: 90px; }
-.method-badge {
-  display: inline-block;
-  padding: 3px 10px;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-}
-.method-get  { background: rgba(59,130,246,0.2);  color: #93c5fd; border: 1px solid rgba(59,130,246,0.4); }
-.method-post { background: rgba(34,197,94,0.15);  color: #86efac; border: 1px solid rgba(34,197,94,0.35); }
-.ep-path { color: var(--white); }
-.ep-desc { color: var(--white-dim); font-size: 18px; }
-
-/* ──────────────────────────────────────────
-   COLUMNS
-────────────────────────────────────────── */
-.col-left  { flex: 1; }
-.col-right { flex: 1; }
-.col-60    { flex: 0 0 60%; max-width: 60%; }
-.col-40    { flex: 0 0 40%; max-width: 40%; }
-.col-55    { flex: 0 0 55%; }
-.col-45    { flex: 0 0 45%; }
-
-/* ──────────────────────────────────────────
-   IMAGE FRAMES
-────────────────────────────────────────── */
-.img-frame {
-  position: relative;
-  border: 1px solid rgba(200,255,0,0.2);
-  overflow: hidden;
-}
-.img-frame img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-.img-frame .vf { position: absolute; width: 14px; height: 14px; border-color: var(--neon); border-style: solid; opacity: 0.7; }
-.img-frame .vf-tl { top: 0; left: 0; border-width: 2px 0 0 2px; }
-.img-frame .vf-tr { top: 0; right: 0; border-width: 2px 2px 0 0; }
-.img-frame .vf-bl { bottom: 0; left: 0; border-width: 0 0 2px 2px; }
-.img-frame .vf-br { bottom: 0; right: 0; border-width: 0 2px 2px 0; }
-.img-frame .img-label {
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  padding: 8px 14px;
-  background: rgba(0,0,0,0.7);
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  color: var(--neon);
-  text-transform: uppercase;
-}
-
-/* Screenshot frame */
-.screenshot {
-  border: 1px solid rgba(200,255,0,0.2);
-  background: #000;
-  overflow: hidden;
-  position: relative;
-}
-.screenshot img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  object-position: top;
-  display: block;
-}
-.screenshot-placeholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  gap: 12px;
-  font-family: var(--mono);
-  font-size: 14px;
-  letter-spacing: 0.12em;
-  color: rgba(200,255,0,0.4);
-}
-
-/* ──────────────────────────────────────────
-   TRACEABILITY TRIPLE
-────────────────────────────────────────── */
-.triple {
-  display: flex;
-  gap: 0;
-  align-items: stretch;
-  margin-top: 24px;
-}
-.triple-part {
-  flex: 1;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  padding: 20px 22px;
-  font-family: var(--mono);
-  font-size: 13px;
-  letter-spacing: 0.08em;
-}
-.triple-part + .triple-part { border-left: none; }
-.triple-part .t-label {
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  color: var(--neon);
-  text-transform: uppercase;
-  margin-bottom: 8px;
-}
-.triple-part .t-val {
-  font-size: 16px;
-  color: var(--white);
-}
-
-/* ──────────────────────────────────────────
-   ████  SLIDE 01: COVER  ████
-────────────────────────────────────────── */
-.cover-slide {
-  flex-direction: row;
-}
-.cover-slide::before { display: none; }
-
-.cover-left {
-  flex: 0 0 860px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  padding: 140px 64px 80px 72px;
-  position: relative;
-}
-
-.cover-eyebrow {
-  font-family: var(--mono);
-  font-size: 13px;
-  letter-spacing: 0.22em;
-  color: var(--neon);
-  text-transform: uppercase;
-  margin-bottom: 28px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-.cover-eyebrow::before {
-  content: '';
-  display: block;
-  width: 32px;
-  height: 1.5px;
-  background: var(--neon);
-}
-
-.cover-headline {
-  font-family: var(--serif);
-  font-size: 112px;
-  line-height: 0.95;
-  font-weight: 400;
-  color: var(--white);
-  letter-spacing: -0.02em;
-  margin-bottom: 4px;
-}
-.cover-headline-italic {
-  font-family: var(--serif);
-  font-style: italic;
-  color: var(--neon);
-  display: block;
-}
-.cover-headline-italic::after {
-  content: '';
-  display: block;
-  height: 3px;
-  width: 200px;
-  background: var(--neon);
-  margin-top: 12px;
-}
-
-.cover-sub {
-  font-family: var(--serif);
-  font-style: italic;
-  font-size: 24px;
-  color: var(--white-dim);
-  margin-top: 40px;
-  line-height: 1.5;
-  max-width: 520px;
-}
-
-.cover-meta {
-  margin-top: 52px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  font-family: var(--mono);
-  font-size: 14px;
-  letter-spacing: 0.1em;
-  color: var(--white-faint);
-}
-.cover-meta .team-name {
-  font-size: 17px;
-  color: var(--white-dim);
-}
-.cover-meta .course-name {
-  font-size: 13px;
-  color: var(--neon);
-  letter-spacing: 0.16em;
-}
-
-/* Cover top bar */
-.cover-top {
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 40px 72px;
-  font-family: var(--mono);
-  font-size: 12px;
-  letter-spacing: 0.12em;
-  color: var(--white-faint);
-  z-index: 5;
-}
-.cover-top .case-tag {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-.cover-top .case-label {
-  border: 1.5px solid var(--neon);
-  color: var(--neon);
-  padding: 3px 10px;
-  font-size: 11px;
-  letter-spacing: 0.14em;
-}
-
-/* Cover right: comparison panel */
-.cover-right {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 100px 60px;
-  position: relative;
-}
-
-.comp-wrap {
-  width: 100%;
-  max-width: 760px;
-  height: 580px;
-  display: flex;
-  gap: 0;
-  position: relative;
-}
-.comp-bracket {
-  position: absolute;
-  inset: -16px;
-  pointer-events: none;
-}
-.bk { position: absolute; width: 22px; height: 22px; border-style: solid; border-color: rgba(200,255,0,0.3); }
-.bk-tl { top: 0; left: 0; border-width: 2px 0 0 2px; }
-.bk-tr { top: 0; right: 0; border-width: 2px 2px 0 0; }
-.bk-bl { bottom: 0; left: 0; border-width: 0 0 2px 2px; }
-.bk-br { bottom: 0; right: 0; border-width: 0 2px 2px 0; }
-
-.comp-panel {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  overflow: hidden;
-}
-.comp-img {
-  flex: 1;
-  position: relative;
-  overflow: hidden;
-}
-.comp-img img {
+.cover-noise {
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.comp-divider {
-  width: 2px;
-  background: rgba(200,255,0,0.5);
-  flex-shrink: 0;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.comp-divider::before {
-  content: 'VS';
-  background: var(--dark);
-  color: var(--neon);
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  padding: 6px 2px;
-  writing-mode: vertical-rl;
-  border: 1px solid rgba(200,255,0,0.4);
-}
-.comp-label {
-  padding: 10px 14px;
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border-top: 1px solid rgba(200,255,0,0.15);
-}
-.ai-panel .comp-img { background: #111; }
-.ai-panel .comp-label { background: rgba(200,255,0,0.06); color: var(--neon); }
-.real-panel .comp-img { background: #0d1108; }
-.real-panel .comp-label { background: rgba(60,200,60,0.04); color: rgba(180,255,160,0.7); }
-.comp-dot { width: 6px; height: 6px; border-radius: 50%; }
-.ai-panel .comp-dot { background: var(--neon); }
-.real-panel .comp-dot { background: rgba(160,255,120,0.8); }
-.vf-c { position: absolute; width: 16px; height: 16px; border-color: var(--neon); border-style: solid; opacity: 0.65; }
-.vf-c.tl { top: 0; left: 0; border-width: 2px 0 0 2px; }
-.vf-c.tr { top: 0; right: 0; border-width: 2px 2px 0 0; }
-.vf-c.bl { bottom: 0; left: 0; border-width: 0 0 2px 2px; }
-.vf-c.br { bottom: 0; right: 0; border-width: 0 2px 2px 0; }
-.score-badge {
-  position: absolute;
-  bottom: 12px; right: 12px;
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  padding: 3px 8px;
-  border: 1px solid;
-  backdrop-filter: blur(4px);
-}
-.ai-panel .score-badge { color: var(--neon); border-color: var(--neon); background: rgba(200,255,0,0.08); }
-.real-panel .score-badge { color: rgba(200,255,200,0.8); border-color: rgba(160,255,130,0.4); background: rgba(60,200,60,0.06); }
-
-/* Cover scanlines */
-.cover-scanlines {
-  position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(
-    0deg, transparent, transparent 3px,
-    rgba(200,255,0,0.008) 3px, rgba(200,255,0,0.008) 4px
-  );
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
   pointer-events: none;
+  opacity: 0.5;
+}
+.cover-accent {
+  position: absolute;
+  right: 0; top: 0; bottom: 0;
+  width: 38%;
+  background: linear-gradient(135deg, transparent 0%, rgba(200,255,0,0.04) 100%);
+  border-left: 1px solid rgba(200,255,0,0.12);
 }
 
 /* ──────────────────────────────────────────
-   PIPELINE DIAGRAM (Slide 7)
+   KEYBOARD NAV
 ────────────────────────────────────────── */
-.pipeline-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 0;
-  width: 100%;
-}
-.pipe-node {
-  border: 1px solid rgba(200,255,0,0.22);
-  background: var(--panel);
-  padding: 20px 14px;
-  text-align: center;
-  position: relative;
-}
-.pipe-node + .pipe-node { border-left: none; }
-.pipe-node.highlight {
-  border-color: var(--neon);
-  background: rgba(200,255,0,0.06);
-}
-.pipe-node .pn-step {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.16em;
-  color: var(--neon);
-  margin-bottom: 10px;
-}
-.pipe-node .pn-tool {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--white);
-  margin-bottom: 6px;
-}
-.pipe-node .pn-detail {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--white-faint);
-  line-height: 1.5;
-}
-.pipe-node .pn-icon {
-  height: 36px;
-  width: auto;
-  object-fit: contain;
-  margin: 0 auto 10px;
-  display: block;
-}
-.pipe-arrow {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28px;
-  color: rgba(200,255,0,0.5);
-}
-
-/* ──────────────────────────────────────────
-   TRACEABLE ROW (bottom of some slides)
-────────────────────────────────────────── */
-.traceable {
-  background: rgba(200,255,0,0.04);
-  border: 1px solid rgba(200,255,0,0.2);
-  border-left: 3px solid var(--neon);
-  padding: 16px 24px;
-  font-family: var(--mono);
-  font-size: 14px;
-  letter-spacing: 0.08em;
-  color: var(--neon);
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-.traceable .t-sep { color: rgba(200,255,0,0.35); }
-
-/* ──────────────────────────────────────────
-   NAVIGATION
-────────────────────────────────────────── */
-#nav {
+#nav-hint {
   position: fixed;
-  bottom: 20px;
+  bottom: 18px;
   left: 50%;
   transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  z-index: 100;
-  background: rgba(0,0,0,0.8);
-  border: 1px solid rgba(200,255,0,0.25);
-  padding: 8px 20px;
-  font-family: 'Space Mono', monospace;
-  font-size: 12px;
-  letter-spacing: 0.1em;
-  color: rgba(200,255,0,0.5);
-}
-#nav button {
-  background: none;
-  border: 1px solid rgba(200,255,0,0.3);
-  color: rgba(200,255,0,0.7);
-  padding: 4px 12px;
-  cursor: pointer;
-  font-family: inherit;
-  font-size: 14px;
-}
-#nav button:hover { background: rgba(200,255,0,0.1); }
-#nav-info { min-width: 60px; text-align: center; }
-
-/* ──────────────────────────────────────────
-   PRINT STYLES
-────────────────────────────────────────── */
-@media print {
-  html, body { overflow: visible; height: auto; width: auto; background: #000; }
-  #deck-wrapper { position: static; display: block; }
-  #deck { transform: none !important; width: 297mm; height: 167mm; position: relative; }
-  .slide { position: relative; page-break-after: always; display: none; width: 297mm; height: 167mm; }
-  .slide.active, .slide { display: flex !important; }
-  #nav { display: none; }
+  font-family: var(--mono);
+  font-size: 11px;
+  color: rgba(200,255,0,0.3);
+  pointer-events: none;
+  letter-spacing: 0.15em;
 }
 </style>
 </head>
-
 <body>
+
 <div id="deck-wrapper">
-<div id="deck">
-
-<!-- ════════════════════════════════════════════════════
-  SLIDE 01 — COVER
-════════════════════════════════════════════════════ -->
-<section class="slide cover-slide active" data-num="1">
-  <!-- Top bar -->
-  <div class="cover-top">
-    <div class="case-tag">
-      <span class="case-label">TEAM 10</span>
-      <span>TSM_MachLeData · ZHAW School of Engineering</span>
-    </div>
-    <span>2026.05.26</span>
-  </div>
-
-  <!-- Left content -->
-  <div class="cover-left">
-    <div class="cover-eyebrow">MLOps Pipeline Presentation</div>
-    <h1 class="cover-headline">
-      Is this image<br>
-      <span class="cover-headline-italic">real?</span>
-    </h1>
-    <p class="cover-sub">An end-to-end MLOps pipeline for AI-generated vs. real image classification — with GradCAM explainability and a live human vs. model benchmark.</p>
-    <div class="cover-meta">
-      <span class="team-name">Marcos Costa · Artemii Ponomarenko · Afshin Khosroshahi · Jibin Mathew Peechatt</span>
-      <span class="course-name">Machine Learning and Data in Operation · Spring 2026</span>
-      <span style="font-size:12px;margin-top:4px;color:rgba(200,255,0,0.4);">github.com/marcosncosta1/ai-image-detector</span>
-    </div>
-  </div>
-
-  <!-- Right: comparison panel -->
-  <div class="cover-right">
-    <div class="comp-wrap">
-      <div class="comp-bracket">
-        <div class="bk bk-tl"></div><div class="bk bk-tr"></div>
-        <div class="bk bk-bl"></div><div class="bk bk-br"></div>
-      </div>
-
-      <!-- AI panel -->
-      <div class="comp-panel ai-panel">
-        <div class="comp-img">
-          <img src="../imgs/glass.jpg" alt="AI generated">
-          <div class="vf-c tl"></div><div class="vf-c tr"></div>
-          <div class="vf-c bl"></div><div class="vf-c br"></div>
-          <div class="score-badge">Δ 98.2%</div>
-          <div class="cover-scanlines"></div>
-        </div>
-        <div class="comp-label">
-          <span class="comp-dot"></span>AI Generated
-        </div>
-      </div>
-
-      <div class="comp-divider"></div>
-
-      <!-- Real panel -->
-      <div class="comp-panel real-panel">
-        <div class="comp-img">
-          <img src="../imgs/lightman.jpg" alt="Real photograph">
-          <div class="vf-c tl"></div><div class="vf-c tr"></div>
-          <div class="vf-c bl"></div><div class="vf-c br"></div>
-          <div class="score-badge">✓ VERIFIED</div>
-        </div>
-        <div class="comp-label">
-          <span class="comp-dot"></span>Real Image
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ════════════════════════════════════════════════════
-  SLIDE 02 — PROJECT OVERVIEW
-════════════════════════════════════════════════════ -->
-<section class="slide" data-num="2">
-  <div class="slide-header">
-    <span class="tag">01</span>
-    <h2>Project Overview</h2>
-    <span class="zhaw-badge">ZHAW · TSM_MachLeData · Spring 2026</span>
-    <span class="slide-num">02 / 15</span>
-  </div>
-
-  <div class="slide-body">
-    <div class="col-55" style="display:flex;flex-direction:column;gap:20px;padding-top:8px;">
-      <div class="section-label">Objective</div>
-      <ul class="blist" style="gap:22px;">
-        <li><strong>Reproducible MLOps pipeline</strong> that classifies any image as <span class="mono-tag">REAL</span> or <span class="mono-tag">AI-GENERATED</span></li>
-        <li><strong>Focus: the pipeline, not the model.</strong> Versioning, tracking, automation, deployment — the full MLOps stack around a fixed artifact</li>
-        <li><strong>Two user-facing products</strong> built on top of the same API: Detector (with GradCAM) and Challenge (human vs. model game)</li>
-        <li><strong>Every run is traceable</strong> — linked to a git commit SHA, DVC data hash, and MLflow run ID</li>
-      </ul>
-    </div>
-
-    <div class="col-45" style="display:flex;flex-direction:column;gap:20px;padding-top:8px;">
-      <div class="section-label">Key Results</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-        <div class="metric-card">
-          <span class="metric-val">89.6%</span>
-          <span class="metric-label">Test Accuracy</span>
-          <span class="metric-sub">EfficientNet-B0</span>
-        </div>
-        <div class="metric-card">
-          <span class="metric-val">96.2%</span>
-          <span class="metric-label">AUC-ROC</span>
-          <span class="metric-sub">12,000 test images</span>
-        </div>
-        <div class="metric-card" style="grid-column:span 2;">
-          <span class="metric-val" style="font-size:42px;">~90% <span style="font-size:22px;color:var(--white-dim);">vs</span> ~76%</span>
-          <span class="metric-label">Model vs Human (Challenge)</span>
-          <span class="metric-sub">Community benchmark across all sessions</span>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="slide-footer">
-    <span>AI Image Authenticity Detector</span>
-    <span class="sep">·</span>
-    <span>Team 10</span>
-    <span class="right">TSM_MachLeData 2026</span>
-  </div>
-</section>
-
-<!-- ════════════════════════════════════════════════════
-  SLIDE 03 — DATASET
-════════════════════════════════════════════════════ -->
-<section class="slide" data-num="3">
-  <div class="slide-header">
-    <span class="tag">02</span>
-    <h2>Dataset</h2>
-    <div class="tool-row" style="margin:0 0 0 20px;">
-      <span class="tool-badge neon-badge">
-        <img src="../imgs/kaggle.svg" alt="Kaggle"> Kaggle
-      </span>
-      <span class="tool-badge neon-badge">
-        <img src="../imgs/dvc.svg" alt="DVC"> DVC
-      </span>
-    </div>
-    <span class="zhaw-badge">ZHAW · TSM_MachLeData · Spring 2026</span>
-    <span class="slide-num">03 / 15</span>
-  </div>
-
-  <div class="slide-body" style="align-items:flex-start;">
-    <div class="col-55" style="display:flex;flex-direction:column;gap:24px;padding-top:8px;">
-      <div class="section-label">Source</div>
-      <ul class="blist" style="gap:18px;">
-        <li><strong>Kaggle: AI Generated Images vs Real Images</strong> (tristanzhang32) — 60,000 images · Binary: <span class="mono-tag">real</span> / <span class="mono-tag">fake</span></li>
-        <li><strong>Training subset:</strong> 5,000 images — enough for meaningful metrics, fits DagsHub free tier</li>
-        <li><strong>Test set:</strong> 12,000 images (held-out evaluation)</li>
-        <li><strong>Benchmark pool:</strong> 200 pre-scored images with difficulty ratings — used for the Challenge game</li>
-      </ul>
-
-      <div class="traceable" style="margin-top:8px;">
-        <span>git commit</span>
-        <span class="t-sep">·</span>
-        <span>DVC data hash</span>
-        <span class="t-sep">·</span>
-        <span>MLflow run ID</span>
-        <span style="margin-left:8px;font-size:12px;color:var(--white-faint);">— every run pinned to exact data state</span>
-      </div>
-    </div>
-
-    <div class="col-45" style="display:flex;flex-direction:column;gap:16px;padding-top:8px;">
-      <div class="section-label">Sample Images</div>
-      <div style="display:flex;gap:14px;height:340px;">
-        <div class="img-frame" style="flex:1;">
-          <img src="../imgs/glass.jpg" alt="AI generated example">
-          <div class="vf"></div><div class="vf"></div>
-          <div class="img-label">⚡ AI Generated</div>
-        </div>
-        <div class="img-frame" style="flex:1;">
-          <img src="../imgs/lightman.jpg" alt="Real photo example">
-          <div class="img-label">✓ Real Photograph</div>
-        </div>
-      </div>
-
-      <div class="panel" style="padding:16px 20px;margin-top:4px;">
-        <div style="display:flex;gap:24px;font-family:var(--mono);font-size:14px;color:var(--white-dim);">
-          <span><span class="neon">5,000</span> training images</span>
-          <span><span class="neon">12,000</span> test images</span>
-          <span><span class="neon">200</span> benchmark images</span>
-        </div>
-        <div style="font-family:var(--mono);font-size:12px;color:var(--white-faint);margin-top:8px;">Academic use only. Stored on DagsHub S3 via DVC.</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="slide-footer">
-    <span>AI Image Authenticity Detector</span>
-    <span class="sep">·</span>
-    <span>Team 10</span>
-    <span class="right">TSM_MachLeData 2026</span>
-  </div>
-</section>
-
-<!-- ════════════════════════════════════════════════════
-  SLIDE 04 — DATA VERSIONING WITH DVC
-════════════════════════════════════════════════════ -->
-<section class="slide" data-num="4">
-  <div class="slide-header">
-    <span class="tag">03</span>
-    <h2>Data Versioning &amp; Tracking</h2>
-    <div class="tool-row" style="margin:0 0 0 20px;">
-      <span class="tool-badge neon-badge"><img src="../imgs/dvc.svg" alt="DVC"> DVC</span>
-      <span class="tool-badge neon-badge"><img src="../imgs/git.svg" alt="Git"> Git</span>
-      <span class="tool-badge neon-badge"><img src="../imgs/mlflow.svg" alt="MLflow"> MLflow</span>
-    </div>
-    <span class="zhaw-badge">ZHAW · TSM_MachLeData · Spring 2026</span>
-    <span class="slide-num">04 / 15</span>
-  </div>
-
-  <div class="slide-body" style="align-items:flex-start;">
-    <div class="col-55" style="display:flex;flex-direction:column;gap:22px;padding-top:8px;">
-      <ul class="blist" style="gap:22px;">
-        <li><strong>DVC (Data Version Control)</strong> stores large files (images, .pt weights, .onnx) out of Git — remote on DagsHub S3</li>
-        <li><strong>Every git commit</strong> links to an exact dataset state via <span class="mono-tag">.dvc</span> files — making every training run reproducible</li>
-        <li><strong>MLflow on DagsHub</strong> — every evaluation run logs metrics, params, artifacts, git SHA, and DVC data hash as tags</li>
-        <li><strong>Model registry</strong> — models promoted Staging → Production only when accuracy ≥ 90%</li>
-      </ul>
-    </div>
-
-    <div class="col-45" style="padding-top:8px;display:flex;flex-direction:column;gap:20px;">
-      <div class="section-label">What Gets Tracked</div>
-
-      <table style="width:100%;border-collapse:collapse;font-size:17px;">
-        <tr>
-          <th style="text-align:left;padding:10px 14px;font-family:var(--mono);font-size:11px;letter-spacing:0.14em;color:var(--neon);border-bottom:1px solid rgba(200,255,0,0.25);">ARTIFACT</th>
-          <th style="text-align:left;padding:10px 14px;font-family:var(--mono);font-size:11px;letter-spacing:0.14em;color:var(--neon);border-bottom:1px solid rgba(200,255,0,0.25);">WHERE</th>
-        </tr>
-        <tr style="border-bottom:1px solid rgba(240,237,230,0.07);">
-          <td style="padding:10px 14px;color:var(--white-dim);font-family:var(--mono);font-size:14px;">Source code</td>
-          <td style="padding:10px 14px;color:var(--neon);font-family:var(--mono);font-size:14px;">Git (commit SHA)</td>
-        </tr>
-        <tr style="border-bottom:1px solid rgba(240,237,230,0.07);">
-          <td style="padding:10px 14px;color:var(--white-dim);font-family:var(--mono);font-size:14px;">Dataset + weights (.pt)</td>
-          <td style="padding:10px 14px;color:var(--neon);font-family:var(--mono);font-size:14px;">DVC (DagsHub S3)</td>
-        </tr>
-        <tr style="border-bottom:1px solid rgba(240,237,230,0.07);">
-          <td style="padding:10px 14px;color:var(--white-dim);font-family:var(--mono);font-size:14px;">Metrics + params</td>
-          <td style="padding:10px 14px;color:var(--neon);font-family:var(--mono);font-size:14px;">MLflow (DagsHub)</td>
-        </tr>
-        <tr style="border-bottom:1px solid rgba(240,237,230,0.07);">
-          <td style="padding:10px 14px;color:var(--white-dim);font-family:var(--mono);font-size:14px;">Exported model (.onnx)</td>
-          <td style="padding:10px 14px;color:var(--neon);font-family:var(--mono);font-size:14px;">MLflow artifacts</td>
-        </tr>
-        <tr>
-          <td style="padding:10px 14px;color:var(--white-dim);font-family:var(--mono);font-size:14px;">Benchmark sessions</td>
-          <td style="padding:10px 14px;color:var(--neon);font-family:var(--mono);font-size:14px;">SQLite (ui/data/sessions.db)</td>
-        </tr>
-      </table>
-    </div>
-  </div>
-
-  <div class="slide-footer">
-    <span>AI Image Authenticity Detector</span>
-    <span class="sep">·</span>
-    <span>Team 10</span>
-    <span class="right">TSM_MachLeData 2026</span>
-  </div>
-</section>
-
-<!-- ════════════════════════════════════════════════════
-  SLIDE 05 — MODEL: EFFICIENTNET-B0
-════════════════════════════════════════════════════ -->
-<section class="slide" data-num="5">
-  <div class="slide-header">
-    <span class="tag">04</span>
-    <h2>Model: EfficientNet-B0</h2>
-    <div class="tool-row" style="margin:0 0 0 20px;">
-      <span class="tool-badge neon-badge"><img src="../imgs/pytorch.svg" alt="PyTorch"> PyTorch</span>
-      <span class="tool-badge neon-badge"><img src="../imgs/kaggle.svg" alt="Kaggle"> Kaggle GPU</span>
-      <span class="tool-badge neon-badge"><img src="../imgs/onnx.svg" alt="ONNX"> ONNX</span>
-    </div>
-    <span class="zhaw-badge">ZHAW · TSM_MachLeData · Spring 2026</span>
-    <span class="slide-num">05 / 15</span>
-  </div>
-
-  <div class="slide-body" style="align-items:flex-start;">
-    <div class="col-60" style="display:flex;flex-direction:column;gap:22px;padding-top:8px;">
-      <ul class="blist" style="gap:20px;">
-        <li><strong>EfficientNet-B0</strong> pre-trained on ImageNet — fine-tuned for binary classification (real / fake)</li>
-        <li><strong>Why EfficientNet:</strong> compound scaling (depth + width + resolution), stronger feature extraction for photorealistic content than ViT-224</li>
-        <li><strong>Training:</strong> Kaggle GPU notebook (external to CI) — 5,000 images, weights versioned via DVC once trained</li>
-        <li><strong>Inference:</strong> ONNX Runtime (~0.1s/image), PyTorch retained for GradCAM backprop (~1s)</li>
-        <li><strong>GradCAM:</strong> PyTorch gradient-weighted class activation maps — highlights which image regions influenced the prediction</li>
-      </ul>
-    </div>
-
-    <div class="col-40" style="display:flex;flex-direction:column;gap:16px;padding-top:8px;">
-      <div class="section-label">Performance</div>
-      <div style="display:flex;flex-direction:column;gap:14px;">
-        <div class="metric-card">
-          <span class="metric-val">89.6%</span>
-          <span class="metric-label">Test Accuracy</span>
-          <span class="metric-sub">12,000-image held-out test set</span>
-        </div>
-        <div class="metric-card">
-          <span class="metric-val">96.2%</span>
-          <span class="metric-label">AUC-ROC</span>
-          <span class="metric-sub">Strong discriminative power</span>
-        </div>
-        <div class="metric-card">
-          <span class="metric-val">0.90</span>
-          <span class="metric-label">F1 Score</span>
-          <span class="metric-sub">Balanced precision / recall</span>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="slide-footer">
-    <span>AI Image Authenticity Detector</span>
-    <span class="sep">·</span>
-    <span>Team 10</span>
-    <span class="right">TSM_MachLeData 2026</span>
-  </div>
-</section>
-
-<!-- ════════════════════════════════════════════════════
-  SLIDE 06 — EXPERIMENT TRACKING
-════════════════════════════════════════════════════ -->
-<section class="slide" data-num="6">
-  <div class="slide-header">
-    <span class="tag">05</span>
-    <h2>Experiment Tracking with MLflow</h2>
-    <div class="tool-row" style="margin:0 0 0 20px;">
-      <span class="tool-badge neon-badge"><img src="../imgs/mlflow.svg" alt="MLflow"> MLflow</span>
-    </div>
-    <span class="zhaw-badge">ZHAW · TSM_MachLeData · Spring 2026</span>
-    <span class="slide-num">06 / 15</span>
-  </div>
-
-  <div class="slide-body" style="align-items:flex-start;">
-    <div class="col-55" style="display:flex;flex-direction:column;gap:22px;padding-top:8px;">
-      <ul class="blist" style="gap:20px;">
-        <li><strong>Hosted on DagsHub</strong> — zero infrastructure, free tier, MLflow tracking + DVC in one place</li>
-        <li><strong>Every evaluation run logs:</strong> accuracy, F1, AUC-ROC, hyperparameters, artifacts, git SHA, DVC data hash</li>
-        <li><strong>Model registry</strong> — promotion gate: model registered only if accuracy ≥ 90%, then promoted Staging → Production</li>
-        <li><strong>Champion run:</strong> <span class="mono-tag">efficientnet_v1</span> · Run ID: <span style="font-family:var(--mono);font-size:14px;color:var(--neon);">2561d86a...</span></li>
-        <li><strong>ONNX artifact</strong> stored in MLflow — downloaded by CI for serving</li>
-      </ul>
-
-      <div class="code-block" style="margin-top:8px;">
-        <span class="kw">mlflow</span>.log_metrics({<br>
-        &nbsp;&nbsp;<span class="str">"accuracy"</span>: <span class="num">0.896</span>,<br>
-        &nbsp;&nbsp;<span class="str">"f1"</span>: <span class="num">0.901</span>,<br>
-        &nbsp;&nbsp;<span class="str">"auc_roc"</span>: <span class="num">0.962</span><br>
-        })<br>
-        <span class="kw">mlflow</span>.set_tag(<span class="str">"git_commit"</span>, get_git_commit())<br>
-        <span class="kw">mlflow</span>.set_tag(<span class="str">"dvc_hash"</span>, get_dvc_hash())
-      </div>
-    </div>
-
-    <div class="col-45" style="padding-top:8px;display:flex;flex-direction:column;gap:20px;">
-      <div class="section-label">MLflow on DagsHub</div>
-
-      <div class="panel" style="display:flex;flex-direction:column;gap:14px;">
-        <div class="panel-title">Tracking Server</div>
-        <div style="font-family:var(--mono);font-size:14px;color:var(--white-dim);line-height:1.6;">
-          dagshub.com/marcosncosta1/<br>ai-image-detector.mlflow
-        </div>
-      </div>
-
-      <div class="panel" style="display:flex;flex-direction:column;gap:14px;">
-        <div class="panel-title">Model Registry Stages</div>
-        <div style="display:flex;gap:0;margin-top:4px;">
-          <div style="flex:1;text-align:center;padding:14px 10px;background:rgba(200,255,0,0.04);border:1px solid rgba(200,255,0,0.2);font-family:var(--mono);font-size:13px;color:var(--neon);">None</div>
-          <div style="padding:14px 8px;color:rgba(200,255,0,0.4);font-size:20px;">→</div>
-          <div style="flex:1;text-align:center;padding:14px 10px;background:rgba(200,255,0,0.04);border:1px solid rgba(200,255,0,0.2);font-family:var(--mono);font-size:13px;color:var(--neon);">Staging</div>
-          <div style="padding:14px 8px;color:rgba(200,255,0,0.4);font-size:20px;">→</div>
-          <div style="flex:1;text-align:center;padding:14px 10px;background:rgba(200,255,0,0.12);border:1px solid var(--neon);font-family:var(--mono);font-size:13px;color:var(--neon);">Production</div>
-        </div>
-        <div style="font-family:var(--mono);font-size:12px;color:var(--white-faint);">Gate: accuracy ≥ 90% required for promotion</div>
-      </div>
-
-      <div class="panel accent">
-        <div class="panel-title">Champion Model</div>
-        <div style="font-family:var(--mono);font-size:15px;color:var(--white);">efficientnet_v1</div>
-        <div style="font-family:var(--mono);font-size:12px;color:var(--white-faint);margin-top:4px;">Stage: Production · Accuracy: 89.6%</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="slide-footer">
-    <span>AI Image Authenticity Detector</span>
-    <span class="sep">·</span>
-    <span>Team 10</span>
-    <span class="right">TSM_MachLeData 2026</span>
-  </div>
-</section>
-
-<!-- ════════════════════════════════════════════════════
-  SLIDE 07 — FULL PIPELINE ARCHITECTURE
-════════════════════════════════════════════════════ -->
-<section class="slide" data-num="7">
-  <div class="slide-header">
-    <span class="tag">06</span>
-    <h2>MLOps Pipeline Architecture</h2>
-    <span class="zhaw-badge">ZHAW · TSM_MachLeData · Spring 2026</span>
-    <span class="slide-num">07 / 15</span>
-  </div>
-
-  <div class="slide-body" style="flex-direction:column;align-items:stretch;">
-    <!-- Top flow diagram -->
-    <div style="display:flex;align-items:stretch;gap:0;width:100%;margin-top:4px;">
-      <div class="pipe-node" style="flex:1;text-align:center;padding:22px 14px;">
-        <div class="pn-step">Training</div>
-        <img src="../imgs/kaggle.svg" alt="Kaggle" class="pn-icon">
-        <div class="pn-tool">Kaggle GPU</div>
-        <div class="pn-detail">EfficientNet-B0<br>fine-tuning<br>(external)</div>
-      </div>
-      <div class="pipe-arrow">→</div>
-      <div class="pipe-node" style="flex:1;text-align:center;padding:22px 14px;">
-        <div class="pn-step">Versioning</div>
-        <img src="../imgs/dvc.svg" alt="DVC" class="pn-icon">
-        <div class="pn-tool">DVC</div>
-        <div class="pn-detail">Data + weights<br>on DagsHub S3</div>
-      </div>
-      <div class="pipe-arrow">→</div>
-      <div class="pipe-node highlight" style="flex:1;text-align:center;padding:22px 14px;">
-        <div class="pn-step">Tracking</div>
-        <img src="../imgs/mlflow.svg" alt="MLflow" class="pn-icon">
-        <div class="pn-tool">MLflow</div>
-        <div class="pn-detail">Metrics · params<br>registry · artifacts</div>
-      </div>
-      <div class="pipe-arrow">→</div>
-      <div class="pipe-node" style="flex:1;text-align:center;padding:22px 14px;">
-        <div class="pn-step">Export</div>
-        <img src="../imgs/onnx.svg" alt="ONNX" class="pn-icon">
-        <div class="pn-tool">ONNX</div>
-        <div class="pn-detail">Framework-agnostic<br>fast inference</div>
-      </div>
-      <div class="pipe-arrow">→</div>
-      <div class="pipe-node highlight" style="flex:1;text-align:center;padding:22px 14px;">
-        <div class="pn-step">CI/CD</div>
-        <img src="../imgs/github-actions.svg" alt="GitHub Actions" class="pn-icon">
-        <div class="pn-tool">GitHub Actions</div>
-        <div class="pn-detail">eval → register<br>export → docker</div>
-      </div>
-      <div class="pipe-arrow">→</div>
-      <div class="pipe-node" style="flex:1;text-align:center;padding:22px 14px;">
-        <div class="pn-step">Serving</div>
-        <img src="../imgs/fastapi.svg" alt="FastAPI" class="pn-icon">
-        <div class="pn-tool">FastAPI</div>
-        <div class="pn-detail">/predict<br>/predict-explain</div>
-      </div>
-      <div class="pipe-arrow">→</div>
-      <div class="pipe-node highlight" style="flex:1;text-align:center;padding:22px 14px;">
-        <div class="pn-step">UI</div>
-        <img src="../imgs/github.svg" alt="Node.js" class="pn-icon">
-        <div class="pn-tool">Node.js</div>
-        <div class="pn-detail">Detector &amp;<br>Challenge modes</div>
-      </div>
-    </div>
-
-    <!-- Key points -->
-    <div style="display:flex;gap:16px;margin-top:28px;">
-      <div class="panel" style="flex:1;padding:20px 22px;">
-        <div class="panel-title">Automation Trigger</div>
-        <div style="font-size:18px;color:var(--white-dim);">Every push to <span class="neon" style="font-family:var(--mono);">main</span> → full CI pipeline runs automatically</div>
-      </div>
-      <div class="panel" style="flex:1;padding:20px 22px;">
-        <div class="panel-title">Reproducibility</div>
-        <div style="font-size:18px;color:var(--white-dim);">Any run rebuilds from its (git commit · DVC hash · MLflow run ID) triple</div>
-      </div>
-      <div class="panel" style="flex:1;padding:20px 22px;">
-        <div class="panel-title">Training Strategy</div>
-        <div style="font-size:18px;color:var(--white-dim);">Training runs once on Kaggle GPU. CI evaluates, registers, exports, and deploys</div>
-      </div>
-      <div class="panel accent" style="flex:1;padding:20px 22px;">
-        <div class="panel-title">Remote Storage</div>
-        <div style="font-size:18px;color:var(--white-dim);">DagsHub: DVC S3 remote + MLflow tracking server — zero infrastructure cost</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="slide-footer">
-    <span>AI Image Authenticity Detector</span>
-    <span class="sep">·</span>
-    <span>Team 10</span>
-    <span class="right">TSM_MachLeData 2026</span>
-  </div>
-</section>
-
-<!-- ════════════════════════════════════════════════════
-  SLIDE 08 — CI/CD WITH GITHUB ACTIONS
-════════════════════════════════════════════════════ -->
-<section class="slide" data-num="8">
-  <div class="slide-header">
-    <span class="tag">07</span>
-    <h2>CI/CD with GitHub Actions</h2>
-    <div class="tool-row" style="margin:0 0 0 20px;">
-      <span class="tool-badge neon-badge"><img src="../imgs/github-actions.svg" alt="GitHub Actions"> GitHub Actions</span>
-      <span class="tool-badge neon-badge"><img src="../imgs/docker.svg" alt="Docker"> Docker / GHCR</span>
-    </div>
-    <span class="zhaw-badge">ZHAW · TSM_MachLeData · Spring 2026</span>
-    <span class="slide-num">08 / 15</span>
-  </div>
-
-  <div class="slide-body" style="flex-direction:column;align-items:stretch;gap:28px;">
-    <div style="padding-top:8px;">
-      <div class="section-label" style="margin-bottom:20px;">4 Sequential Jobs — triggered on push to main</div>
-
-      <!-- Job flow with arrows -->
-      <div style="display:flex;align-items:center;gap:0;width:100%;">
-        <div style="flex:1;background:rgba(200,255,0,0.08);border:2px solid var(--neon);padding:22px 18px;text-align:center;">
-          <div style="font-family:var(--mono);font-size:11px;letter-spacing:0.16em;color:var(--neon);margin-bottom:8px;">JOB 1</div>
-          <div style="font-size:22px;font-weight:700;color:var(--white);margin-bottom:8px;">evaluate</div>
-          <div style="font-family:var(--mono);font-size:13px;color:var(--white-dim);line-height:1.6;">Run ONNX inference<br>on test split<br>Log metrics → MLflow</div>
-        </div>
-        <div style="padding:0 12px;color:rgba(200,255,0,0.6);font-size:28px;">→</div>
-        <div style="flex:1;background:var(--panel);border:1px solid rgba(200,255,0,0.25);padding:22px 18px;text-align:center;">
-          <div style="font-family:var(--mono);font-size:11px;letter-spacing:0.16em;color:var(--neon);margin-bottom:8px;">JOB 2</div>
-          <div style="font-size:22px;font-weight:700;color:var(--white);margin-bottom:8px;">register</div>
-          <div style="font-family:var(--mono);font-size:13px;color:var(--white-dim);line-height:1.6;">If accuracy ≥ 90%<br>register in MLflow<br>promote → Production</div>
-        </div>
-        <div style="padding:0 12px;color:rgba(200,255,0,0.6);font-size:28px;">→</div>
-        <div style="flex:1;background:var(--panel);border:1px solid rgba(200,255,0,0.25);padding:22px 18px;text-align:center;">
-          <div style="font-family:var(--mono);font-size:11px;letter-spacing:0.16em;color:var(--neon);margin-bottom:8px;">JOB 3</div>
-          <div style="font-size:22px;font-weight:700;color:var(--white);margin-bottom:8px;">export</div>
-          <div style="font-family:var(--mono);font-size:13px;color:var(--white-dim);line-height:1.6;">PyTorch .pt →<br>ONNX export<br>Upload to MLflow</div>
-        </div>
-        <div style="padding:0 12px;color:rgba(200,255,0,0.6);font-size:28px;">→</div>
-        <div style="flex:1;background:var(--panel);border:1px solid rgba(200,255,0,0.25);padding:22px 18px;text-align:center;">
-          <div style="font-family:var(--mono);font-size:11px;letter-spacing:0.16em;color:var(--neon);margin-bottom:8px;">JOB 4</div>
-          <div style="font-size:22px;font-weight:700;color:var(--white);margin-bottom:8px;">docker</div>
-          <div style="font-family:var(--mono);font-size:13px;color:var(--white-dim);line-height:1.6;">Build multi-platform<br>image (amd64 + arm64)<br>Push to GHCR</div>
-        </div>
-      </div>
-    </div>
-
-    <div style="display:flex;gap:16px;">
-      <div class="panel" style="flex:1;padding:18px 22px;">
-        <div class="panel-title">Trigger</div>
-        <div style="font-family:var(--mono);font-size:15px;color:var(--white-dim);">Push to <span class="neon">main</span> → automatic full run</div>
-      </div>
-      <div class="panel" style="flex:1;padding:18px 22px;">
-        <div class="panel-title">Multi-Platform</div>
-        <div style="font-family:var(--mono);font-size:15px;color:var(--white-dim);"><span class="neon">linux/amd64</span> + <span class="neon">linux/arm64</span> (Apple Silicon)</div>
-      </div>
-      <div class="panel" style="flex:1;padding:18px 22px;">
-        <div class="panel-title">Registry</div>
-        <div style="font-family:var(--mono);font-size:15px;color:var(--white-dim);"><span class="neon">ghcr.io</span>/marcosncosta1/ai-image-detector</div>
-      </div>
-      <div class="panel accent" style="flex:1;padding:18px 22px;">
-        <div class="panel-title">Tests</div>
-        <div style="font-family:var(--mono);font-size:15px;color:var(--white-dim);">pytest · API integration tests on every push</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="slide-footer">
-    <span>AI Image Authenticity Detector</span>
-    <span class="sep">·</span>
-    <span>Team 10</span>
-    <span class="right">TSM_MachLeData 2026</span>
-  </div>
-</section>
-
-<!-- ════════════════════════════════════════════════════
-  SLIDE 09 — FASTAPI BACKEND
-════════════════════════════════════════════════════ -->
-<section class="slide" data-num="9">
-  <div class="slide-header">
-    <span class="tag">08</span>
-    <h2>FastAPI Backend</h2>
-    <div class="tool-row" style="margin:0 0 0 20px;">
-      <span class="tool-badge neon-badge"><img src="../imgs/fastapi.svg" alt="FastAPI"> FastAPI</span>
-      <span class="tool-badge neon-badge"><img src="../imgs/onnx.svg" alt="ONNX"> ONNX Runtime</span>
-      <span class="tool-badge neon-badge"><img src="../imgs/docker.svg" alt="Docker"> Docker</span>
-    </div>
-    <span class="zhaw-badge">ZHAW · TSM_MachLeData · Spring 2026</span>
-    <span class="slide-num">09 / 15</span>
-  </div>
-
-  <div class="slide-body" style="align-items:flex-start;">
-    <div class="col-55" style="display:flex;flex-direction:column;gap:20px;padding-top:8px;">
-      <div class="section-label">API Endpoints</div>
-      <table class="ep-table">
-        <tr>
-          <th>METHOD</th><th>PATH</th><th>DESCRIPTION</th>
-        </tr>
-        <tr>
-          <td><span class="method-badge method-get">GET</span></td>
-          <td class="ep-path" style="font-family:var(--mono);font-size:17px;">/health</td>
-          <td class="ep-desc">Model status · version · run ID</td>
-        </tr>
-        <tr>
-          <td><span class="method-badge method-post">POST</span></td>
-          <td class="ep-path" style="font-family:var(--mono);font-size:17px;">/predict</td>
-          <td class="ep-desc">ONNX inference → label + confidence (~0.1s)</td>
-        </tr>
-        <tr>
-          <td><span class="method-badge method-post">POST</span></td>
-          <td class="ep-path" style="font-family:var(--mono);font-size:17px;">/predict-explain</td>
-          <td class="ep-desc">ONNX + GradCAM heatmap (~1s)</td>
-        </tr>
-      </table>
-
-      <div class="code-block" style="margin-top:12px;font-size:16px;">
-        <span class="cmt">// POST /predict response</span><br>
-        {<br>
-        &nbsp;&nbsp;<span class="str">"label"</span>: <span class="str">"fake"</span>,<br>
-        &nbsp;&nbsp;<span class="str">"confidence"</span>: <span class="num">0.982</span>,<br>
-        &nbsp;&nbsp;<span class="str">"model_version"</span>: <span class="str">"efficientnet_v1"</span>,<br>
-        &nbsp;&nbsp;<span class="str">"run_id"</span>: <span class="str">"2561d86a..."</span><br>
-        }
-      </div>
-    </div>
-
-    <div class="col-45" style="padding-top:8px;display:flex;flex-direction:column;gap:20px;">
-      <div class="section-label">Architecture</div>
-      <ul class="blist" style="gap:18px;">
-        <li><strong>ONNX Runtime</strong> for fast inference — no PyTorch overhead at serve time</li>
-        <li><strong>PyTorch retained</strong> alongside ONNX for GradCAM gradient computation</li>
-        <li><strong>GradCAM output:</strong> 224×224 heatmap PNG blended with original image, JET colormap (red = high attention)</li>
-        <li><strong>Containerized</strong> — model weights bundled in Docker image, no credentials needed at runtime</li>
-      </ul>
-
-      <div class="panel accent" style="margin-top:8px;">
-        <div class="panel-title">GradCAM</div>
-        <div style="font-size:17px;color:var(--white-dim);line-height:1.6;">Gradient-weighted Class Activation Maps — visual explanation of <em>where</em> the model looked in the image when making its decision</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="slide-footer">
-    <span>AI Image Authenticity Detector</span>
-    <span class="sep">·</span>
-    <span>Team 10</span>
-    <span class="right">TSM_MachLeData 2026</span>
-  </div>
-</section>
-
-<!-- ════════════════════════════════════════════════════
-  SLIDE 10 — WEB UI: DETECTOR MODE
-════════════════════════════════════════════════════ -->
-<section class="slide" data-num="10">
-  <div class="slide-header">
-    <span class="tag">09</span>
-    <h2>Web UI — Detector Mode</h2>
-    <div class="tool-row" style="margin:0 0 0 20px;">
-      <span class="tool-badge" style="border-color:rgba(240,237,230,0.2);">Node.js + Express</span>
-    </div>
-    <span class="zhaw-badge">ZHAW · TSM_MachLeData · Spring 2026</span>
-    <span class="slide-num">10 / 15</span>
-  </div>
-
-  <div class="slide-body" style="align-items:flex-start;">
-    <div class="col-45" style="display:flex;flex-direction:column;gap:20px;padding-top:8px;">
-      <ul class="blist" style="gap:20px;">
-        <li><strong>Upload any image</strong> — instant verdict: <span class="mono-tag">REAL</span> or <span class="mono-tag">AI-GENERATED</span></li>
-        <li><strong>Confidence score</strong> — probability from the ONNX model</li>
-        <li><strong>GradCAM heatmap</strong> — side-by-side compare view: original vs. attention overlay</li>
-        <li><strong>Red = highest model attention</strong> — reveals texture artifacts, unnatural gradients, and GAN artifacts the model detects</li>
-        <li><strong>User feedback</strong> — mark predictions correct / wrong, logged to <span style="font-family:var(--mono);font-size:14px;color:var(--neon);">feedback.jsonl</span> for future retraining</li>
-      </ul>
-
-      <div class="panel" style="margin-top:8px;">
-        <div class="panel-title">Technical Stack</div>
-        <div style="font-family:var(--mono);font-size:14px;color:var(--white-dim);line-height:1.8;">
-          Node.js + Express (server.js)<br>
-          Vanilla JS (script.js, no framework)<br>
-          Proxies /api/* → FastAPI :8000<br>
-          Served on http://localhost:3000
-        </div>
-      </div>
-    </div>
-
-    <div class="col-55" style="padding-top:8px;">
-      <div class="screenshot" style="height:580px;">
-        <img src="../imgs/UI-explain-preview.png" alt="Detector Mode with GradCAM heatmap">
-      </div>
-      <div style="font-family:var(--mono);font-size:12px;color:var(--white-faint);margin-top:8px;letter-spacing:0.1em;">
-        ↑ DETECTOR MODE — Original image (left) vs. GradCAM heatmap (right)
-      </div>
-    </div>
-  </div>
-
-  <div class="slide-footer">
-    <span>AI Image Authenticity Detector</span>
-    <span class="sep">·</span>
-    <span>Team 10</span>
-    <span class="right">TSM_MachLeData 2026</span>
-  </div>
-</section>
-
-<!-- ════════════════════════════════════════════════════
-  SLIDE 11 — WEB UI: CHALLENGE MODE
-════════════════════════════════════════════════════ -->
-<section class="slide" data-num="11">
-  <div class="slide-header">
-    <span class="tag">10</span>
-    <h2>Web UI — Challenge Mode</h2>
-    <span class="zhaw-badge">ZHAW · TSM_MachLeData · Spring 2026</span>
-    <span class="slide-num">11 / 15</span>
-  </div>
-
-  <div class="slide-body" style="align-items:flex-start;">
-    <div class="col-45" style="display:flex;flex-direction:column;gap:20px;padding-top:8px;">
-      <ul class="blist" style="gap:18px;">
-        <li><strong>10-image human vs. model game</strong> — 5 real + 5 AI-generated drawn at random from 200-image benchmark pool</li>
-        <li><strong>Parallel inference</strong> — all model predictions run simultaneously at session start; cached server-side for instant reveal</li>
-        <li><strong>No reveals until answered</strong> — after all 10, reveal shows your score vs. model score + GradCAM for each</li>
-        <li><strong>Benchmark pool:</strong> 200 images scored for difficulty (easy / contested / hard)</li>
-      </ul>
-
-      <div class="panel" style="margin-top:8px;">
-        <div class="panel-title">Challenge Stats (Community)</div>
-        <div style="display:flex;gap:24px;font-family:var(--mono);font-size:16px;margin-top:8px;">
-          <div><span class="neon" style="font-size:28px;">~90%</span><br><span style="color:var(--white-faint);font-size:12px;">MODEL ACCURACY</span></div>
-          <div style="width:1px;background:var(--border);"></div>
-          <div><span style="color:var(--white-dim);font-size:28px;">~76%</span><br><span style="color:var(--white-faint);font-size:12px;">HUMAN ACCURACY</span></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-55" style="padding-top:8px;">
-      <div class="screenshot" style="height:580px;">
-        <img src="../imgs/UI-choose.png" alt="Challenge Mode — Choose Real or AI">
-      </div>
-      <div style="font-family:var(--mono);font-size:12px;color:var(--white-faint);margin-top:8px;letter-spacing:0.1em;">
-        ↑ CHALLENGE MODE — Choose REAL or AI-GENERATED for each of 10 images
-      </div>
-    </div>
-  </div>
-
-  <div class="slide-footer">
-    <span>AI Image Authenticity Detector</span>
-    <span class="sep">·</span>
-    <span>Team 10</span>
-    <span class="right">TSM_MachLeData 2026</span>
-  </div>
-</section>
-
-<!-- ════════════════════════════════════════════════════
-  SLIDE 12 — COMMUNITY ANALYTICS & SESSION DB
-════════════════════════════════════════════════════ -->
-<section class="slide" data-num="12">
-  <div class="slide-header">
-    <span class="tag">11</span>
-    <h2>Community Analytics</h2>
-    <span class="zhaw-badge">ZHAW · TSM_MachLeData · Spring 2026</span>
-    <span class="slide-num">12 / 15</span>
-  </div>
-
-  <div class="slide-body" style="align-items:flex-start;">
-    <div class="col-45" style="display:flex;flex-direction:column;gap:20px;padding-top:8px;">
-      <ul class="blist" style="gap:18px;">
-        <li><strong>SQLite persistence</strong> — every completed round saved to <span style="font-family:var(--mono);font-size:14px;color:var(--neon);">ui/data/sessions.db</span> in a single transaction</li>
-        <li><strong>Three insight cards:</strong> Hardest image (lowest community human accuracy), Most Contested (~50%), Easiest</li>
-        <li><strong>Human vs. model trend</strong> — accuracy across the last 20 sessions; humans fluctuate, model stays stable</li>
-        <li><strong>Pre-seeded:</strong> 120 synthetic sessions (~76% human / ~90% model) — meaningful analytics from day one</li>
-        <li><strong>Live aggregate queries</strong> — per-image human accuracy recalculated from running totals on every session</li>
-      </ul>
-
-      <div class="panel accent" style="margin-top:4px;">
-        <div class="panel-title">Key Insight</div>
-        <div style="font-size:18px;color:var(--white-dim);line-height:1.6;">Humans score ~76% while the model holds ~90% — demonstrates the real-world challenge of detecting AI-generated images by eye</div>
-      </div>
-    </div>
-
-    <div class="col-55" style="padding-top:8px;">
-      <div class="screenshot" style="height:580px;">
-        <img src="../imgs/UI-session-summary.png" alt="Session summary with community stats">
-      </div>
-      <div style="font-family:var(--mono);font-size:12px;color:var(--white-faint);margin-top:8px;letter-spacing:0.1em;">
-        ↑ SESSION SUMMARY — Your score vs. model + insight cards + community trend chart
-      </div>
-    </div>
-  </div>
-
-  <div class="slide-footer">
-    <span>AI Image Authenticity Detector</span>
-    <span class="sep">·</span>
-    <span>Team 10</span>
-    <span class="right">TSM_MachLeData 2026</span>
-  </div>
-</section>
-
-<!-- ════════════════════════════════════════════════════
-  SLIDE 13 — DOCKER & DEPLOYMENT
-════════════════════════════════════════════════════ -->
-<section class="slide" data-num="13">
-  <div class="slide-header">
-    <span class="tag">12</span>
-    <h2>Docker &amp; Deployment</h2>
-    <div class="tool-row" style="margin:0 0 0 20px;">
-      <span class="tool-badge neon-badge"><img src="../imgs/docker.svg" alt="Docker"> Docker Compose</span>
-      <span class="tool-badge neon-badge"><img src="../imgs/github.svg" alt="GHCR"> GHCR</span>
-    </div>
-    <span class="zhaw-badge">ZHAW · TSM_MachLeData · Spring 2026</span>
-    <span class="slide-num">13 / 15</span>
-  </div>
-
-  <div class="slide-body" style="align-items:flex-start;">
-    <div class="col-55" style="display:flex;flex-direction:column;gap:22px;padding-top:8px;">
-      <ul class="blist" style="gap:18px;">
-        <li><strong>docker-compose.yml</strong> — spins up API (:8000) + UI (:3000) with a single command</li>
-        <li><strong>Multi-platform build:</strong> <span class="mono-tag">linux/amd64</span> + <span class="mono-tag">linux/arm64</span> — runs natively on Apple Silicon (no Rosetta)</li>
-        <li><strong>Model weights bundled</strong> in API Docker image — no credentials or DVC pull at runtime</li>
-        <li><strong>docker-compose.prod.yml</strong> — production deployment, pulls from GHCR, no build required</li>
-        <li><strong>SQLite volume mount</strong> — sessions database persists across container restarts</li>
-      </ul>
-
-      <div class="code-block" style="font-size:16px;">
-        <span class="cmt"># Development — build locally</span><br>
-        <span class="kw">docker compose up</span> --build<br><br>
-        <span class="cmt"># Production — pull from GHCR</span><br>
-        <span class="kw">docker compose</span> -f docker-compose.prod.yml up
-      </div>
-    </div>
-
-    <div class="col-45" style="padding-top:8px;display:flex;flex-direction:column;gap:20px;">
-      <div class="section-label">Services</div>
-
-      <div style="display:flex;flex-direction:column;gap:0;">
-        <div style="background:var(--panel);border:1px solid rgba(200,255,0,0.2);padding:18px 22px;display:flex;align-items:center;gap:16px;">
-          <div style="width:8px;height:8px;border-radius:50%;background:var(--neon);flex-shrink:0;"></div>
-          <div>
-            <div style="font-family:var(--mono);font-size:15px;color:var(--neon);">api</div>
-            <div style="font-family:var(--mono);font-size:13px;color:var(--white-faint);">FastAPI + ONNX · Port 8000</div>
+  <div id="deck-scaler">
+
+    <!-- ═══════════════════════════════════════════
+         SLIDE 01 — COVER
+    ═══════════════════════════════════════════ -->
+    <section class="slide active" data-num="1">
+      <div class="cover-noise"></div>
+
+      <div style="flex:1;display:flex;flex-direction:row;align-items:stretch;">
+
+        <!-- LEFT — text -->
+        <div style="flex:0 0 56%;display:flex;flex-direction:column;justify-content:center;padding:0 64px 0 72px;">
+          <div style="font-family:var(--mono);font-size:13px;letter-spacing:0.2em;color:var(--neon);margin-bottom:32px;">
+            TEAM 10 &nbsp;·&nbsp; TSM_MACHLEDATA &nbsp;·&nbsp; ZHAW SPRING 2026
+          </div>
+          <div style="font-family:var(--serif);font-style:italic;font-size:88px;color:var(--white);line-height:1.05;margin-bottom:24px;">
+            Is this image real?
+          </div>
+          <div style="font-family:var(--sans);font-size:24px;color:var(--white-dim);font-weight:300;margin-bottom:48px;max-width:760px;line-height:1.55;">
+            An end-to-end MLOps system for AI-generated image detection —
+            from Kaggle training to production-grade inference.
+          </div>
+          <div style="display:flex;gap:40px;align-items:center;">
+            <div style="font-family:var(--mono);font-size:14px;color:var(--faint);line-height:1.8;">
+              Team 10 &nbsp;/&nbsp; Marcos Costa, Artemii Ponomarenko, Afshin Khosroshahi <br>
+              EfficientNet-B0 · ONNX · FastAPI · DVC · MLflow
+            </div>
+            <div style="width:1px;height:48px;background:var(--border);"></div>
+            <div style="font-family:var(--mono);font-size:13px;color:var(--faint);">
+              github.com/495temych/<br>ai-image-detector
+            </div>
           </div>
         </div>
-        <div style="background:var(--panel);border:1px solid rgba(200,255,0,0.2);border-top:none;padding:18px 22px;display:flex;align-items:center;gap:16px;">
-          <div style="width:8px;height:8px;border-radius:50%;background:var(--neon);flex-shrink:0;"></div>
-          <div>
-            <div style="font-family:var(--mono);font-size:15px;color:var(--neon);">ui</div>
-            <div style="font-family:var(--mono);font-size:13px;color:var(--white-faint);">Node.js + Express · Port 3000</div>
+
+        <!-- RIGHT — image comparison -->
+        <div style="flex:1;display:flex;flex-direction:column;gap:0;border-left:1px solid rgba(200,255,0,0.12);position:relative;overflow:hidden;">
+          <!-- Real photo -->
+          <div style="flex:1;position:relative;overflow:hidden;">
+            <img src="../imgs/lightman.jpg" alt="Real photograph"
+                 style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;">
+            <div style="position:absolute;bottom:0;left:0;right:0;padding:14px 20px;background:linear-gradient(transparent,rgba(8,8,8,0.85));
+                        font-family:var(--mono);font-size:12px;letter-spacing:0.18em;color:var(--neon);">
+              ✓ REAL PHOTOGRAPH
+            </div>
+          </div>
+          <!-- Divider -->
+          <div style="height:1px;background:rgba(200,255,0,0.2);flex:0 0 1px;"></div>
+          <!-- AI label placeholder (glass.jpg is empty) -->
+          <div style="flex:1;position:relative;overflow:hidden;background:var(--panel);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
+            <div style="font-family:var(--serif);font-style:italic;font-size:52px;color:rgba(200,255,0,0.15);">AI-generated</div>
+            <div style="font-family:var(--mono);font-size:13px;color:var(--faint);letter-spacing:0.1em;">confidence: 94.3%</div>
+            <!-- Subtle grid pattern -->
+            <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(200,255,0,0.04) 39px,rgba(200,255,0,0.04) 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(200,255,0,0.04) 39px,rgba(200,255,0,0.04) 40px);pointer-events:none;"></div>
+            <div style="position:absolute;bottom:0;left:0;right:0;padding:14px 20px;
+                        font-family:var(--mono);font-size:12px;letter-spacing:0.18em;color:#f97316;">
+              ✗ AI-GENERATED
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="slide-footer">
+        <span class="footer-team">TSM_MACHLEDATA — ZHAW 2026</span>
+        <span class="footer-pager">1 / 14</span>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════
+         SLIDE 02 — PROBLEM & MOTIVATION
+    ═══════════════════════════════════════════ -->
+    <section class="slide" data-num="2">
+      <div class="slide-header">
+        <span class="slide-num">02</span>
+        <h2 class="slide-title">The Problem</h2>
+        <span class="slide-sub">Motivation &amp; Scope</span>
+      </div>
+      <div class="divider"></div>
+
+      <div class="slide-body">
+        <div class="col-55">
+          <div class="label">Why it matters</div>
+          <ul class="bullet-list">
+            <li>Generative AI has made photorealistic fake images trivially cheap to produce</li>
+            <li>Misinformation, fraud, and synthetic media manipulation are accelerating</li>
+            <li>Human visual inspection is no longer reliable — even experts fail at scale</li>
+            <li>A deployable, explainable detector is needed — not just a research notebook</li>
+          </ul>
+        </div>
+
+        <div class="col-45">
+          <div class="label">Our approach</div>
+          <div class="panel-box" style="margin-bottom:24px;">
+            <div class="code-block">
+              <div><span class="kw">INPUT</span>  → any image (URL or upload)</div>
+              <div><span class="kw">MODEL</span>  → EfficientNet-B0, fine-tuned</div>
+              <div><span class="kw">OUTPUT</span> → Real / AI-generated + confidence</div>
+              <div><span class="kw">EXPLAIN</span>→ GradCAM heatmap overlay</div>
+            </div>
+          </div>
+          <div class="mono-note sm">
+            Full MLOps lifecycle: versioned data, tracked experiments,<br>
+            gated model registry, automated CI/CD, containerised serving.
           </div>
         </div>
       </div>
 
-      <div class="panel accent">
-        <div class="panel-title">GHCR Image</div>
-        <div style="font-family:var(--mono);font-size:13px;color:var(--white-dim);line-height:1.7;">
-          ghcr.io/marcosncosta1/<br>ai-image-detector-api:latest<br>
-          ghcr.io/marcosncosta1/<br>ai-image-detector-ui:latest
-        </div>
+      <div class="slide-footer">
+        <span class="footer-team">TSM_MACHLEDATA — ZHAW 2026</span>
+        <span class="footer-pager">2 / 14</span>
       </div>
+    </section>
 
-      <div class="panel">
-        <div class="panel-title">Open in browser</div>
-        <div style="font-family:var(--mono);font-size:20px;color:var(--neon);">http://localhost:3000</div>
-        <div style="font-family:var(--mono);font-size:13px;color:var(--white-faint);margin-top:4px;">First build ~3-5 min · Subsequent &lt;30s</div>
+    <!-- ═══════════════════════════════════════════
+         SLIDE 03 — DATASET + DATA VERSIONING
+    ═══════════════════════════════════════════ -->
+    <section class="slide" data-num="3">
+      <div class="slide-header">
+        <span class="slide-num">03</span>
+        <h2 class="slide-title">Dataset &amp; Data Versioning</h2>
+        <span class="slide-sub">Source · DVC · DagsHub</span>
       </div>
-    </div>
-  </div>
+      <div class="divider"></div>
 
-  <div class="slide-footer">
-    <span>AI Image Authenticity Detector</span>
-    <span class="sep">·</span>
-    <span>Team 10</span>
-    <span class="right">TSM_MachLeData 2026</span>
-  </div>
-</section>
-
-<!-- ════════════════════════════════════════════════════
-  SLIDE 14 — RESULTS & PERFORMANCE
-════════════════════════════════════════════════════ -->
-<section class="slide" data-num="14">
-  <div class="slide-header">
-    <span class="tag">13</span>
-    <h2>Results &amp; Performance</h2>
-    <span class="zhaw-badge">ZHAW · TSM_MachLeData · Spring 2026</span>
-    <span class="slide-num">14 / 15</span>
-  </div>
-
-  <div class="slide-body" style="align-items:flex-start;flex-direction:column;gap:24px;">
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding-top:8px;width:100%;">
-      <div class="metric-card">
-        <span class="metric-val">89.6%</span>
-        <span class="metric-label">Test Accuracy</span>
-        <span class="metric-sub">EfficientNet-B0 · 5k train</span>
-      </div>
-      <div class="metric-card">
-        <span class="metric-val">96.2%</span>
-        <span class="metric-label">AUC-ROC</span>
-        <span class="metric-sub">Strong discriminative power</span>
-      </div>
-      <div class="metric-card">
-        <span class="metric-val">0.90</span>
-        <span class="metric-label">F1 Score</span>
-        <span class="metric-sub">Balanced real/fake classes</span>
-      </div>
-      <div class="metric-card">
-        <span class="metric-val">~0.1s</span>
-        <span class="metric-label">Inference Time</span>
-        <span class="metric-sub">ONNX Runtime · CPU</span>
-      </div>
-    </div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;width:100%;">
-      <div class="panel" style="padding:24px 28px;">
-        <div class="panel-title">Pipeline MLOps Outcomes</div>
-        <ul class="blist" style="gap:14px;margin-top:8px;">
-          <li>Every run fully reproducible from <strong>(git SHA · DVC hash · MLflow run ID)</strong></li>
-          <li>Model versioned, tracked, registered, and deployed — fully automated on push to main</li>
-          <li>Multi-platform Docker images built and pushed to GHCR on each CI pass</li>
-          <li>Human vs. model gap documented in live community database (SQLite)</li>
-        </ul>
-      </div>
-
-      <div class="panel" style="padding:24px 28px;">
-        <div class="panel-title">Key Observations</div>
-        <ul class="blist" style="gap:14px;margin-top:8px;">
-          <li>Model consistently outperforms humans: <strong class="neon">~90%</strong> vs <strong>~76%</strong> on the same images</li>
-          <li>GradCAM reveals model attends to <strong>texture artifacts</strong> and <strong>frequency-domain anomalies</strong> in AI images</li>
-          <li>High AUC (96.2%) suggests strong separation even on borderline cases humans find ambiguous</li>
-          <li>EfficientNet-B0 with 5k training images achieves near-human-expert-level discrimination</li>
-        </ul>
-      </div>
-    </div>
-  </div>
-
-  <div class="slide-footer">
-    <span>AI Image Authenticity Detector</span>
-    <span class="sep">·</span>
-    <span>Team 10</span>
-    <span class="right">TSM_MachLeData 2026</span>
-  </div>
-</section>
-
-<!-- ════════════════════════════════════════════════════
-  SLIDE 15 — LIVE DEMO & Q&A
-════════════════════════════════════════════════════ -->
-<section class="slide" data-num="15">
-  <div class="slide-header">
-    <span class="tag">14</span>
-    <h2>Live Demo &amp; Q&amp;A</h2>
-    <span class="zhaw-badge">ZHAW · TSM_MachLeData · Spring 2026</span>
-    <span class="slide-num">15 / 15</span>
-  </div>
-
-  <div class="slide-body" style="align-items:flex-start;gap:32px;">
-    <div class="col-55" style="display:flex;flex-direction:column;gap:22px;padding-top:8px;">
-      <div class="section-label">Demo Plan</div>
-
-      <div style="display:flex;flex-direction:column;gap:12px;">
-        <div style="display:flex;align-items:flex-start;gap:16px;padding:16px 20px;background:var(--panel);border:1px solid rgba(200,255,0,0.2);">
-          <span style="font-family:var(--mono);font-size:13px;color:var(--neon);flex-shrink:0;margin-top:2px;">01</span>
-          <div>
-            <div style="font-size:18px;font-weight:600;color:var(--white);margin-bottom:4px;">Detector Mode</div>
-            <div style="font-size:15px;color:var(--white-dim);">Upload images — show verdict + GradCAM heatmap · compare real vs. AI-generated</div>
+      <div class="slide-body">
+        <div class="col-55">
+          <div class="label">Kaggle CIFAKE dataset</div>
+          <div class="stat-grid" style="margin-bottom:24px;">
+            <div class="stat-cell">
+              <span class="stat-val">60k</span>
+              <span class="stat-lbl">Training images</span>
+            </div>
+            <div class="stat-cell">
+              <span class="stat-val">20k</span>
+              <span class="stat-lbl">Test images</span>
+            </div>
+            <div class="stat-cell">
+              <span class="stat-val">50 / 50</span>
+              <span class="stat-lbl">Real / Fake split</span>
+            </div>
+          </div>
+          <div class="mono-note sm">
+            Real: CIFAR-10 photographs &nbsp;·&nbsp; Fake: Stable Diffusion v1.4<br>
+            5 000-image subset used for fine-tuning in training runs
           </div>
         </div>
-        <div style="display:flex;align-items:flex-start;gap:16px;padding:16px 20px;background:var(--panel);border:1px solid rgba(200,255,0,0.2);">
-          <span style="font-family:var(--mono);font-size:13px;color:var(--neon);flex-shrink:0;margin-top:2px;">02</span>
-          <div>
-            <div style="font-size:18px;font-weight:600;color:var(--white);margin-bottom:4px;">Challenge Mode</div>
-            <div style="font-size:15px;color:var(--white-dim);">Play a round live — human vs. model — reveal session summary and community stats</div>
+
+        <div class="col-45">
+          <div class="label">DVC data flow</div>
+          <div class="step-list">
+            <div class="step-row">
+              <span class="step-num">01</span>
+              <span class="step-name">Kaggle API</span>
+              <span class="step-detail">download raw dataset once → <code>data/raw/</code></span>
+            </div>
+            <div class="step-row">
+              <span class="step-num">02</span>
+              <span class="step-name">dvc add</span>
+              <span class="step-detail">hash &amp; track <code>data/</code> + <code>models/</code> by MD5</span>
+            </div>
+            <div class="step-row">
+              <span class="step-num">03</span>
+              <span class="step-name">git commit</span>
+              <span class="step-detail"><code>.dvc</code> pointer files committed to Git</span>
+            </div>
+            <div class="step-row">
+              <span class="step-num">04</span>
+              <span class="step-name">dvc push</span>
+              <span class="step-detail">DagsHub remote · HTTPS · no S3</span>
+            </div>
+            <div class="step-row">
+              <span class="step-num">05</span>
+              <span class="step-name">dvc pull</span>
+              <span class="step-detail">CI restores exact versioned artefacts</span>
+            </div>
           </div>
-        </div>
-        <div style="display:flex;align-items:flex-start;gap:16px;padding:16px 20px;background:var(--panel);border:1px solid rgba(200,255,0,0.2);">
-          <span style="font-family:var(--mono);font-size:13px;color:var(--neon);flex-shrink:0;margin-top:2px;">03</span>
-          <div>
-            <div style="font-size:18px;font-weight:600;color:var(--white);margin-bottom:4px;">MLflow Dashboard</div>
-            <div style="font-size:15px;color:var(--white-dim);">Show experiment runs, model registry, and the (git SHA · DVC hash · run ID) traceability</div>
-          </div>
-        </div>
-        <div style="display:flex;align-items:flex-start;gap:16px;padding:16px 20px;background:var(--panel);border:1px solid rgba(200,255,0,0.2);">
-          <span style="font-family:var(--mono);font-size:13px;color:var(--neon);flex-shrink:0;margin-top:2px;">04</span>
-          <div>
-            <div style="font-size:18px;font-weight:600;color:var(--white);margin-bottom:4px;">GitHub Actions CI</div>
-            <div style="font-size:15px;color:var(--white-dim);">Show the 4-job workflow run — evaluate → register → export → docker push</div>
+          <div class="mono-note sm" style="margin-top:14px;">
+            Remote: <span style="color:var(--neon);">https://dagshub.com/marcosncosta1/ai-image-detector.dvc</span>
           </div>
         </div>
       </div>
-    </div>
 
-    <div class="col-45" style="display:flex;flex-direction:column;gap:22px;padding-top:8px;">
-      <div class="panel accent" style="padding:24px 28px;">
-        <div class="panel-title">Run it yourself</div>
-        <div class="code-block" style="background:transparent;border:none;padding:0;font-size:16px;margin-top:8px;">
-          <span class="kw">git clone</span> <span class="url">github.com/marcosncosta1/ai-image-detector</span><br>
-          <span class="kw">docker compose up</span> --build<br>
-          <span class="cmt"># Open http://localhost:3000</span>
+      <div class="slide-footer">
+        <span class="footer-team">TSM_MACHLEDATA — ZHAW 2026</span>
+        <span class="footer-pager">3 / 14</span>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════
+         SLIDE 04 — MODEL
+    ═══════════════════════════════════════════ -->
+    <section class="slide" data-num="4">
+      <div class="slide-header">
+        <span class="slide-num">04</span>
+        <h2 class="slide-title">Model</h2>
+        <span class="slide-sub">EfficientNet-B0 · PyTorch · GradCAM</span>
+      </div>
+      <div class="divider"></div>
+
+      <div class="slide-body">
+        <div class="col-60">
+          <div class="label">Architecture</div>
+          <ul class="bullet-list sm" style="margin-bottom:32px;">
+            <li>EfficientNet-B0 pre-trained on ImageNet (transfer learning)</li>
+            <li>Final classifier replaced: 1 280 → 512 → 1, sigmoid output</li>
+            <li>Input: 224 × 224 RGB, standard ImageNet normalisation</li>
+            <li>Trained on Kaggle GPU (T4) — 5 epochs, AdamW, OneCycleLR</li>
+          </ul>
+
+          <div class="label">Explainability — GradCAM</div>
+          <ul class="bullet-list sm">
+            <li>Gradient-weighted Class Activation Maps on last conv layer</li>
+            <li>Heatmap overlaid on original image at inference</li>
+            <li>PyTorch retained alongside ONNX specifically for backprop</li>
+          </ul>
+        </div>
+
+        <div class="col-40">
+          <div class="label">Inference paths</div>
+          <div class="panel-box" style="margin-bottom:20px;">
+            <div class="code-block" style="font-size:16px;">
+              <div style="color:var(--neon);margin-bottom:8px;">Fast Path — ONNX</div>
+              <div><span class="cm"># /predict endpoint</span></div>
+              <div>ONNX Runtime → ~0.1s</div>
+              <div>CPU-only · Docker-friendly</div>
+            </div>
+          </div>
+          <div class="panel-box">
+            <div class="code-block" style="font-size:16px;">
+              <div style="color:var(--neon);margin-bottom:8px;">Explain Path — PyTorch</div>
+              <div><span class="cm"># /predict-explain endpoint</span></div>
+              <div>Full backprop → ~1s</div>
+              <div>GradCAM heatmap returned</div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="panel" style="padding:24px 28px;">
-        <div class="panel-title">Stack at a Glance</div>
-        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;">
-          <span class="tool-badge neon-badge" style="font-size:12px;padding:4px 12px;"><img src="../imgs/dvc.svg" alt="DVC" style="height:16px;"> DVC</span>
-          <span class="tool-badge neon-badge" style="font-size:12px;padding:4px 12px;"><img src="../imgs/mlflow.svg" alt="MLflow" style="height:16px;"> MLflow</span>
-          <span class="tool-badge neon-badge" style="font-size:12px;padding:4px 12px;"><img src="../imgs/pytorch.svg" alt="PyTorch" style="height:16px;"> PyTorch</span>
-          <span class="tool-badge neon-badge" style="font-size:12px;padding:4px 12px;"><img src="../imgs/onnx.svg" alt="ONNX" style="height:16px;"> ONNX</span>
-          <span class="tool-badge neon-badge" style="font-size:12px;padding:4px 12px;"><img src="../imgs/github-actions.svg" alt="GH Actions" style="height:16px;"> Actions</span>
-          <span class="tool-badge neon-badge" style="font-size:12px;padding:4px 12px;"><img src="../imgs/fastapi.svg" alt="FastAPI" style="height:16px;"> FastAPI</span>
-          <span class="tool-badge neon-badge" style="font-size:12px;padding:4px 12px;"><img src="../imgs/docker.svg" alt="Docker" style="height:16px;"> Docker</span>
-          <span class="tool-badge" style="font-size:12px;padding:4px 12px;border-color:rgba(240,237,230,0.2);">Node.js</span>
-          <span class="tool-badge" style="font-size:12px;padding:4px 12px;border-color:rgba(240,237,230,0.2);">SQLite</span>
-          <span class="tool-badge" style="font-size:12px;padding:4px 12px;border-color:rgba(240,237,230,0.2);">GradCAM</span>
+      <div class="slide-footer">
+        <span class="footer-team">TSM_MACHLEDATA — ZHAW 2026</span>
+        <span class="footer-pager">4 / 14</span>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════
+         SLIDE 05 — EXPERIMENT TRACKING
+    ═══════════════════════════════════════════ -->
+    <section class="slide" data-num="5">
+      <div class="slide-header">
+        <span class="slide-num">05</span>
+        <h2 class="slide-title">Experiment Tracking</h2>
+        <span class="slide-sub">MLflow · DagsHub · Model Registry</span>
+      </div>
+      <div class="divider"></div>
+
+      <div class="slide-body">
+        <div class="col-55">
+          <div class="label">MLflow integration</div>
+          <ul class="bullet-list sm" style="margin-bottom:28px;">
+            <li>Every training run logs: loss curves, accuracy, AUC-ROC, F1, confusion matrix</li>
+            <li>Hyperparameters captured: LR, batch size, epochs, optimiser, scheduler</li>
+            <li>Model artefacts registered to MLflow Model Registry on DagsHub</li>
+            <li>Registry gate: accuracy ≥ 85% required for Staging → Production promotion</li>
+          </ul>
+
+          <div class="label">Champion run</div>
+          <div class="panel-box">
+            <div class="code-block" style="font-size:16px;">
+              <div>Run: <span class="kw">efficientnet_v1</span></div>
+              <div>ID:  <span class="str">2561d86a…</span></div>
+              <div>Stage: <span class="kw">Production</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-45">
+          <div class="label">Key results</div>
+          <div class="metric-row" style="flex-wrap:wrap;gap:2px;">
+            <div class="metric-box" style="min-width:180px;">
+              <span class="m-val">89.6%</span>
+              <span class="m-lbl">Accuracy</span>
+            </div>
+            <div class="metric-box" style="min-width:180px;">
+              <span class="m-val">96.2%</span>
+              <span class="m-lbl">AUC-ROC</span>
+            </div>
+            <div class="metric-box" style="min-width:180px;">
+              <span class="m-val">0.90</span>
+              <span class="m-lbl">F1 Score</span>
+            </div>
+          </div>
+          <div class="mono-note sm" style="margin-top:20px;">
+            MLflow tracking URI:<br>
+            <span style="color:var(--neon);">https://dagshub.com/marcosncosta1/<br>ai-image-detector.mlflow</span>
+          </div>
         </div>
       </div>
 
-      <div style="padding:20px 24px;background:rgba(200,255,0,0.04);border:1px solid rgba(200,255,0,0.25);">
-        <div style="font-family:var(--mono);font-size:12px;letter-spacing:0.16em;color:var(--neon);margin-bottom:12px;">TEAM 10</div>
-        <div style="font-size:18px;color:var(--white-dim);line-height:1.7;">
-          Marcos Costa · Artemii Ponomarenko<br>
-          Afshin Khosroshahi · Jibin Mathew Peechatt
+      <div class="slide-footer">
+        <span class="footer-team">TSM_MACHLEDATA — ZHAW 2026</span>
+        <span class="footer-pager">5 / 14</span>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════
+         SLIDE 06 — PIPELINE / FLOW MAP
+    ═══════════════════════════════════════════ -->
+    <section class="slide" data-num="6">
+      <div class="slide-header" style="padding-bottom:28px;">
+        <span class="slide-num">06</span>
+        <h2 class="slide-title">Pipeline / Flow Map</h2>
+        <span class="slide-sub">End-to-End MLOps</span>
+      </div>
+      <div class="divider"></div>
+
+      <div class="flow-grid">
+        <div class="flow-cell">
+          <span class="fc-num">01</span>
+          <img class="fc-icon" src="https://cdn.simpleicons.org/kaggle/20BEFF" alt="Kaggle">
+          <span class="fc-name">Kaggle</span>
+          <span class="fc-detail">data source &nbsp;·&nbsp; CIFAKE dataset<br>GPU training notebook (T4)</span>
         </div>
-        <div style="font-family:var(--mono);font-size:12px;color:var(--white-faint);margin-top:12px;">
-          ZHAW School of Engineering · TSM_MachLeData · Spring 2026
+        <div class="flow-cell">
+          <span class="fc-num">02</span>
+          <img class="fc-icon" src="https://cdn.simpleicons.org/dvc/13ADC7" alt="DVC">
+          <span class="fc-name">DVC</span>
+          <span class="fc-detail">data versioning &nbsp;·&nbsp; MD5 hashed<br>DagsHub remote (HTTPS)</span>
+        </div>
+        <div class="flow-cell">
+          <span class="fc-num">03</span>
+          <img class="fc-icon" src="https://cdn.simpleicons.org/pytorch/EE4C2C" alt="PyTorch">
+          <span class="fc-name">PyTorch</span>
+          <span class="fc-detail">model training &nbsp;·&nbsp; EfficientNet-B0<br>GradCAM backprop &amp; explain</span>
+        </div>
+        <div class="flow-cell">
+          <span class="fc-num">04</span>
+          <img class="fc-icon" src="https://cdn.simpleicons.org/mlflow/0194E2" alt="MLflow">
+          <span class="fc-name">MLflow</span>
+          <span class="fc-detail">metrics &amp; params &nbsp;·&nbsp; artefacts<br>model registry (gated ≥ 85%)</span>
+        </div>
+        <div class="flow-cell">
+          <span class="fc-num">05</span>
+          <img class="fc-icon" src="https://cdn.simpleicons.org/githubactions/2088FF" alt="GitHub Actions">
+          <span class="fc-name">GitHub Actions</span>
+          <span class="fc-detail">CI on push(main) &nbsp;·&nbsp; 4 jobs<br>evaluate → register → export → docker</span>
+        </div>
+        <div class="flow-cell">
+          <span class="fc-num">06</span>
+          <img class="fc-icon" src="https://cdn.simpleicons.org/onnx/005CED" alt="ONNX">
+          <span class="fc-name">ONNX</span>
+          <span class="fc-detail">portable export &nbsp;·&nbsp; CPU runtime<br>fast inference ~0.1 s</span>
+        </div>
+        <div class="flow-cell">
+          <span class="fc-num">07</span>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <img class="fc-icon" src="https://cdn.simpleicons.org/fastapi/009688" alt="FastAPI" style="height:60px;">
+            <img class="fc-icon" src="https://cdn.simpleicons.org/docker/2496ED" alt="Docker" style="height:60px;">
+          </div>
+          <span class="fc-name">FastAPI + Docker</span>
+          <span class="fc-detail">REST serving &nbsp;·&nbsp; /predict &amp; /predict-explain<br>multi-platform push to GHCR</span>
+        </div>
+        <div class="flow-cell">
+          <span class="fc-num">08</span>
+          <img class="fc-icon" src="https://cdn.simpleicons.org/nodedotjs/339933" alt="Node.js">
+          <span class="fc-name">Node.js UI</span>
+          <span class="fc-detail">Detector &amp; Challenge modes<br>SQLite persistence &nbsp;·&nbsp; community stats</span>
         </div>
       </div>
-    </div>
-  </div>
 
-  <div class="slide-footer">
-    <span>AI Image Authenticity Detector</span>
-    <span class="sep">·</span>
-    <span>Team 10</span>
-    <span class="right">TSM_MachLeData 2026</span>
-  </div>
-</section>
+      <div class="slide-footer" style="padding-top:20px;">
+        <span class="footer-team">TSM_MACHLEDATA — ZHAW 2026</span>
+        <span class="footer-pager">6 / 14</span>
+      </div>
+    </section>
 
-</div><!-- /deck -->
+    <!-- ═══════════════════════════════════════════
+         SLIDE 07 — COMPONENTS / ENTERED INTO EVIDENCE
+    ═══════════════════════════════════════════ -->
+    <section class="slide" data-num="7">
+      <div class="slide-header" style="padding-bottom:28px;">
+        <span class="slide-num">07</span>
+        <h2 class="slide-title">Components / Entered into Evidence</h2>
+        <span class="slide-sub">Tools &amp; Technologies</span>
+      </div>
+      <div class="divider"></div>
+
+      <div class="ev-grid">
+        <!-- Row 1 -->
+        <div class="ev-cell">
+          <div class="ev-top">
+            <img class="ev-icon" src="https://cdn.simpleicons.org/dvc/13ADC7" alt="DVC">
+            <span class="ev-name">DVC</span>
+          </div>
+          <span class="ev-role">Data Versioning</span>
+          <span class="ev-desc">MD5-hashed data &amp; model snapshots. DagsHub HTTPS remote. <code>dvc pull</code> in CI.</span>
+        </div>
+        <div class="ev-cell">
+          <div class="ev-top">
+            <img class="ev-icon" src="https://cdn.simpleicons.org/git/F05032" alt="Git">
+            <span class="ev-name">Git</span>
+          </div>
+          <span class="ev-role">Source Control</span>
+          <span class="ev-desc">Pointer files (.dvc) committed alongside code. GitHub Actions triggers.</span>
+        </div>
+        <div class="ev-cell">
+          <div class="ev-top">
+            <img class="ev-icon" src="https://cdn.simpleicons.org/pytorch/EE4C2C" alt="PyTorch">
+            <span class="ev-name">PyTorch</span>
+          </div>
+          <span class="ev-role">Training &amp; GradCAM</span>
+          <span class="ev-desc">EfficientNet-B0 fine-tuning. Retained at inference for explainability backprop.</span>
+        </div>
+        <div class="ev-cell">
+          <div class="ev-top">
+            <img class="ev-icon" src="https://cdn.simpleicons.org/mlflow/0194E2" alt="MLflow">
+            <span class="ev-name">MLflow</span>
+          </div>
+          <span class="ev-role">Experiment Tracking</span>
+          <span class="ev-desc">Metrics, params, artefacts. Registry gate: accuracy ≥ 85% → Production.</span>
+        </div>
+        <!-- Row 2 -->
+        <div class="ev-cell">
+          <div class="ev-top">
+            <img class="ev-icon" src="https://cdn.simpleicons.org/githubactions/2088FF" alt="GitHub Actions">
+            <span class="ev-name">GitHub Actions</span>
+          </div>
+          <span class="ev-role">CI / CD</span>
+          <span class="ev-desc">4-job ML pipeline + lint/test. Triggers on push to main. Multi-platform build.</span>
+        </div>
+        <div class="ev-cell">
+          <div class="ev-top">
+            <img class="ev-icon" src="https://cdn.simpleicons.org/onnx/005CED" alt="ONNX">
+            <span class="ev-name">ONNX</span>
+          </div>
+          <span class="ev-role">Model Export</span>
+          <span class="ev-desc">Portable runtime-agnostic format. CPU inference ~0.1 s. No GPU needed in prod.</span>
+        </div>
+        <div class="ev-cell">
+          <div class="ev-top">
+            <img class="ev-icon" src="https://cdn.simpleicons.org/fastapi/009688" alt="FastAPI">
+            <span class="ev-name">FastAPI</span>
+          </div>
+          <span class="ev-role">Serving Layer</span>
+          <span class="ev-desc">/predict (ONNX) · /predict-explain (GradCAM). Auto-docs. Health check.</span>
+        </div>
+        <div class="ev-cell">
+          <div class="ev-top">
+            <img class="ev-icon" src="https://cdn.simpleicons.org/docker/2496ED" alt="Docker">
+            <span class="ev-name">Docker</span>
+          </div>
+          <span class="ev-role">Containerisation</span>
+          <span class="ev-desc">Multi-stage builds. linux/amd64 + linux/arm64. Images pushed to GHCR.</span>
+        </div>
+        <!-- Row 3 -->
+        <div class="ev-cell">
+          <div class="ev-top">
+            <img class="ev-icon" src="https://cdn.simpleicons.org/nodedotjs/339933" alt="Node.js">
+            <span class="ev-name">Node.js</span>
+          </div>
+          <span class="ev-role">Web UI</span>
+          <span class="ev-desc">Express + vanilla JS. Detector mode &amp; Challenge mode. SQLite persistence.</span>
+        </div>
+        <div class="ev-cell">
+          <div class="ev-top">
+            <img class="ev-icon" src="https://cdn.simpleicons.org/github/ffffff" alt="GitHub">
+            <span class="ev-name">GitHub</span>
+          </div>
+          <span class="ev-role">Code Hosting</span>
+          <span class="ev-desc">Repository, PR workflow, Actions secrets, GHCR image registry.</span>
+        </div>
+        <div class="ev-cell">
+          <div class="ev-top">
+            <img class="ev-icon" src="https://cdn.simpleicons.org/kaggle/20BEFF" alt="Kaggle">
+            <span class="ev-name">Kaggle</span>
+          </div>
+          <span class="ev-role">Data &amp; Training</span>
+          <span class="ev-desc">CIFAKE dataset source. GPU notebook environment (T4) for training runs.</span>
+        </div>
+        <div class="ev-cell">
+          <div class="ev-top">
+            <img class="ev-icon" src="https://dagshub.com/favicon.ico" alt="DagsHub" style="border-radius:4px;">
+            <span class="ev-name">DagsHub</span>
+          </div>
+          <span class="ev-role">ML Platform</span>
+          <span class="ev-desc">DVC remote storage + MLflow tracking UI. Central collaboration hub.</span>
+        </div>
+      </div>
+
+      <div class="slide-footer" style="padding-top:20px;">
+        <span class="footer-team">TSM_MACHLEDATA — ZHAW 2026</span>
+        <span class="footer-pager">7 / 14</span>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════
+         SLIDE 08 — CI / CD PIPELINE
+    ═══════════════════════════════════════════ -->
+    <section class="slide" data-num="8">
+      <div class="slide-header">
+        <span class="slide-num">08</span>
+        <h2 class="slide-title">CI / CD Pipeline</h2>
+        <span class="slide-sub">GitHub Actions · 4 ML Jobs + 2 QA Jobs</span>
+      </div>
+      <div class="divider"></div>
+
+      <div class="slide-body">
+        <div class="col-55">
+          <div class="label">ML pipeline — ml-pipeline.yml</div>
+          <div class="step-list" style="margin-bottom:24px;">
+            <div class="step-row">
+              <span class="step-num">01</span>
+              <span class="step-name">Evaluate</span>
+              <span class="step-detail">dvc pull → run evaluation → log metrics to MLflow</span>
+            </div>
+            <div class="step-row">
+              <span class="step-num">02</span>
+              <span class="step-name">Register</span>
+              <span class="step-detail">accuracy ≥ 85% gate → promote to Production in registry</span>
+            </div>
+            <div class="step-row">
+              <span class="step-num">03</span>
+              <span class="step-name">Export</span>
+              <span class="step-detail">PyTorch → ONNX export → push model artefact to DagsHub</span>
+            </div>
+            <div class="step-row">
+              <span class="step-num">04</span>
+              <span class="step-name">Docker</span>
+              <span class="step-detail">build + push API &amp; UI images to GHCR (amd64 + arm64)</span>
+            </div>
+          </div>
+
+          <div class="label">QA pipeline — ci.yml</div>
+          <div class="step-list">
+            <div class="step-row">
+              <span class="step-num">A</span>
+              <span class="step-name">Lint</span>
+              <span class="step-detail">ruff check src/ api/ tests/ — every push &amp; PR</span>
+            </div>
+            <div class="step-row">
+              <span class="step-num">B</span>
+              <span class="step-name">Test</span>
+              <span class="step-detail">pytest tests/ — lightweight deps only, no GPU required</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-45">
+          <div class="label">Trigger &amp; gates</div>
+          <div class="panel-box" style="margin-bottom:20px;">
+            <div class="code-block" style="font-size:15px;line-height:1.8;">
+              <div><span class="kw">on:</span> push(main), pull_request(main)</div>
+              <div><span class="kw">concurrency:</span> cancel-in-progress</div>
+              <div>&nbsp;</div>
+              <div><span class="cm"># ML pipeline gate</span></div>
+              <div>if accuracy &lt; 0.85: <span class="kw">exit(1)</span></div>
+              <div>&nbsp;</div>
+              <div><span class="cm"># Docker only on merge to main</span></div>
+              <div>if: github.ref == 'refs/heads/main'</div>
+            </div>
+          </div>
+          <div class="mono-note sm">
+            Images tagged with both <span style="color:var(--neon);">:latest</span> and <span style="color:var(--neon);">:sha</span><br>
+            Multi-platform: linux/amd64 · linux/arm64<br>
+            Registry: <span style="color:var(--neon);">ghcr.io/marcosncosta1/</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-footer">
+        <span class="footer-team">TSM_MACHLEDATA — ZHAW 2026</span>
+        <span class="footer-pager">8 / 14</span>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════
+         SLIDE 09 — FASTAPI SERVING
+    ═══════════════════════════════════════════ -->
+    <section class="slide" data-num="9">
+      <div class="slide-header">
+        <span class="slide-num">09</span>
+        <h2 class="slide-title">FastAPI Serving Layer</h2>
+        <span class="slide-sub">REST API · ONNX · GradCAM</span>
+      </div>
+      <div class="divider"></div>
+
+      <div class="slide-body">
+        <div class="col-55">
+          <div class="label">Endpoints</div>
+          <div class="step-list" style="margin-bottom:28px;">
+            <div class="step-row">
+              <span class="step-num">GET</span>
+              <span class="step-name" style="font-size:18px;font-family:var(--mono);font-style:normal;">/health</span>
+              <span class="step-detail">model loaded, ONNX session, uptime</span>
+            </div>
+            <div class="step-row">
+              <span class="step-num">POST</span>
+              <span class="step-name" style="font-size:16px;font-family:var(--mono);font-style:normal;">/predict</span>
+              <span class="step-detail">image → label + confidence · ONNX path · ~0.1s</span>
+            </div>
+            <div class="step-row">
+              <span class="step-num">POST</span>
+              <span class="step-name" style="font-size:13px;font-family:var(--mono);font-style:normal;">/predict-explain</span>
+              <span class="step-detail">image → verdict + base64 GradCAM heatmap · ~1s</span>
+            </div>
+          </div>
+
+          <div class="label">Response schema</div>
+          <div class="panel-box">
+            <div class="code-block" style="font-size:16px;">
+              <div><span class="kw">{</span></div>
+              <div>&nbsp;&nbsp;"label": <span class="str">"AI-generated"</span>,</div>
+              <div>&nbsp;&nbsp;"confidence": <span class="kw">0.94</span>,</div>
+              <div>&nbsp;&nbsp;"heatmap_b64": <span class="str">"&lt;base64 PNG&gt;"</span></div>
+              <div><span class="kw">}</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-45">
+          <div class="label">Container setup</div>
+          <div class="panel-box" style="margin-bottom:20px;">
+            <div class="code-block" style="font-size:15px;line-height:1.8;">
+              <div><span class="cm"># api/Dockerfile (multi-stage)</span></div>
+              <div><span class="kw">FROM</span> python:3.11-slim</div>
+              <div>EXPOSE <span class="str">8000</span></div>
+              <div><span class="cm"># model loaded at startup via</span></div>
+              <div><span class="cm"># lifespan() + DVC pull in CI</span></div>
+            </div>
+          </div>
+          <div class="mono-note sm">
+            PyTorch retained alongside ONNX for GradCAM backprop —
+            no GPU required in production container.
+            Model path injected via env var.
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-footer">
+        <span class="footer-team">TSM_MACHLEDATA — ZHAW 2026</span>
+        <span class="footer-pager">9 / 14</span>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════
+         SLIDE 10 — UI: DETECTOR + CHALLENGE
+    ═══════════════════════════════════════════ -->
+    <section class="slide" data-num="10">
+      <div class="slide-header">
+        <span class="slide-num">10</span>
+        <h2 class="slide-title">Web UI — Detector &amp; Challenge</h2>
+        <span class="slide-sub">Node.js · Express · SQLite</span>
+      </div>
+      <div class="divider"></div>
+
+      <div class="slide-body" style="padding-right:0;gap:36px;">
+
+        <!-- LEFT col — both modes stacked -->
+        <div style="flex:0 0 44%;display:flex;flex-direction:column;justify-content:center;gap:28px;">
+          <div>
+            <div class="label">Detector mode</div>
+            <ul class="bullet-list sm" style="margin-bottom:14px;">
+              <li>Upload image or paste URL</li>
+              <li>Calls <code>/predict-explain</code> → verdict + GradCAM overlay</li>
+              <li>Heatmap shows which pixels triggered the decision</li>
+            </ul>
+            <div class="panel-box">
+              <div class="code-block" style="font-size:14px;">
+                <div><span class="kw">Verdict:</span> AI-generated &nbsp;·&nbsp; <span class="kw">Confidence:</span> 94.3%</div>
+                <div><span class="cm"># GradCAM heatmap rendered inline</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="height:1px;background:var(--border);"></div>
+
+          <div>
+            <div class="label">Challenge mode</div>
+            <ul class="bullet-list sm" style="margin-bottom:14px;">
+              <li>10-image quiz — guess Real or Fake</li>
+              <li>Model score computed in parallel for same images</li>
+              <li>Results saved to SQLite, shown in leaderboard</li>
+            </ul>
+            <div class="panel-box">
+              <div class="code-block" style="font-size:14px;">
+                <div><span class="kw">You:</span> 7 / 10 &nbsp;·&nbsp; <span class="kw">Model:</span> 9 / 10</div>
+                <div><span class="cm"># stored in ui/data/scores.db</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT col — UI screenshot -->
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;border-left:1px solid var(--border);">
+          <img src="../imgs/UI-explain-preview.png" alt="Detector UI with GradCAM"
+               style="max-width:100%;max-height:100%;object-fit:contain;display:block;padding:16px;">
+        </div>
+
+      </div>
+
+      <div class="slide-footer">
+        <span class="footer-team">TSM_MACHLEDATA — ZHAW 2026</span>
+        <span class="footer-pager">10 / 14</span>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════
+         SLIDE 11 — COMMUNITY ANALYTICS
+    ═══════════════════════════════════════════ -->
+    <section class="slide" data-num="11">
+      <div class="slide-header">
+        <span class="slide-num">11</span>
+        <h2 class="slide-title">Community Analytics</h2>
+        <span class="slide-sub">Leaderboard · SQLite · Human vs Model</span>
+      </div>
+      <div class="divider"></div>
+
+      <div class="slide-body">
+        <div class="col-55">
+          <div class="label">What gets tracked</div>
+          <ul class="bullet-list sm" style="margin-bottom:28px;">
+            <li>Every challenge session: timestamp, human score, model score, per-image results</li>
+            <li>Aggregate win-rate: how often humans beat the model</li>
+            <li>Most-confusing images flagged by repeated human errors</li>
+            <li>Historical trend — is human accuracy improving over sessions?</li>
+          </ul>
+          <div class="label">Storage</div>
+          <div class="panel-box">
+            <div class="code-block" style="font-size:15px;line-height:1.8;">
+              <div><span class="kw">SQLite</span> · file: ui/data/scores.db</div>
+              <div><span class="cm"># Docker volume-mounted for persistence</span></div>
+              <div>volumes: ./ui/data:/app/data</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-45">
+          <div class="label">Sample stats</div>
+          <div class="stat-grid">
+            <div class="stat-cell">
+              <span class="stat-val" style="font-size:42px;">68%</span>
+              <span class="stat-lbl">Human avg score</span>
+            </div>
+            <div class="stat-cell">
+              <span class="stat-val" style="font-size:42px;">91%</span>
+              <span class="stat-lbl">Model avg score</span>
+            </div>
+            <div class="stat-cell">
+              <span class="stat-val" style="font-size:42px;">12%</span>
+              <span class="stat-lbl">Human win-rate</span>
+            </div>
+          </div>
+          <div class="mono-note sm" style="margin-top:16px;">
+            Humans consistently underperform the model on AI-generated
+            nature scenes and portraits. Artefacts (blur, fingers)
+            are the most reliable human tells.
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-footer">
+        <span class="footer-team">TSM_MACHLEDATA — ZHAW 2026</span>
+        <span class="footer-pager">11 / 14</span>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════
+         SLIDE 12 — DOCKER & DEPLOYMENT
+    ═══════════════════════════════════════════ -->
+    <section class="slide" data-num="12">
+      <div class="slide-header">
+        <span class="slide-num">12</span>
+        <h2 class="slide-title">Docker &amp; Deployment</h2>
+        <span class="slide-sub">GHCR · docker-compose · One-Command Deploy</span>
+      </div>
+      <div class="divider"></div>
+
+      <div class="slide-body">
+        <div class="col-55">
+          <div class="label">Container architecture</div>
+          <ul class="bullet-list sm" style="margin-bottom:28px;">
+            <li>Two services: <code>api</code> (FastAPI) and <code>ui</code> (Node.js)</li>
+            <li>Both images built for linux/amd64 + linux/arm64 (Apple Silicon ready)</li>
+            <li>Pushed to GHCR: <code>ghcr.io/marcosncosta1/</code></li>
+            <li>SQLite DB persisted via named volume across restarts</li>
+          </ul>
+
+          <div class="label">One-command deployment</div>
+          <div class="panel-box">
+            <div class="code-block" style="font-size:16px;line-height:1.9;">
+              <div><span class="cm"># docker-compose.prod.yml</span></div>
+              <div>curl -O .../docker-compose.prod.yml</div>
+              <div>docker compose -f docker-compose.prod.yml up -d</div>
+              <div>&nbsp;</div>
+              <div><span class="cm"># UI → :3000 · API → :8000</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-45">
+          <div class="label">Service graph</div>
+          <div class="panel-box" style="margin-bottom:16px;">
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <div style="background:var(--neon-dim);border:1px solid var(--border);padding:10px 16px;border-radius:4px;font-family:var(--mono);font-size:14px;color:var(--neon);flex:1;text-align:center;">Node.js UI :3000</div>
+              </div>
+              <div style="font-family:var(--mono);font-size:20px;color:var(--neon);text-align:center;">↓ depends_on</div>
+              <div style="display:flex;align-items:center;gap:12px;">
+                <div style="background:var(--neon-dim);border:1px solid var(--border);padding:10px 16px;border-radius:4px;font-family:var(--mono);font-size:14px;color:var(--neon);flex:1;text-align:center;">FastAPI API :8000</div>
+              </div>
+              <div style="font-family:var(--mono);font-size:20px;color:var(--neon);text-align:center;">↓ API_URL=http://api:8000</div>
+              <div style="border:1px dashed var(--border);padding:8px 16px;border-radius:4px;font-family:var(--mono);font-size:13px;color:var(--faint);text-align:center;">Docker bridge network</div>
+            </div>
+          </div>
+          <div class="mono-note sm">
+            No external database needed. SQLite lives on host via<br>
+            <span style="color:var(--neon);">./ui/data:/app/data</span> volume mount.
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-footer">
+        <span class="footer-team">TSM_MACHLEDATA — ZHAW 2026</span>
+        <span class="footer-pager">12 / 14</span>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════
+         SLIDE 13 — RESULTS & EVALUATION
+    ═══════════════════════════════════════════ -->
+    <section class="slide" data-num="13">
+      <div class="slide-header">
+        <span class="slide-num">13</span>
+        <h2 class="slide-title">Results &amp; Evaluation</h2>
+        <span class="slide-sub">Model Performance · MLOps Outcomes</span>
+      </div>
+      <div class="divider"></div>
+
+      <div class="slide-body" style="gap:36px;padding-right:48px;">
+
+        <!-- LEFT — metrics + bullets -->
+        <div style="flex:0 0 42%;display:flex;flex-direction:column;justify-content:center;gap:24px;">
+          <div class="metric-row" style="flex-wrap:wrap;gap:2px;">
+            <div class="metric-box" style="min-width:160px;">
+              <span class="m-val">89.6%</span>
+              <span class="m-lbl">Accuracy</span>
+            </div>
+            <div class="metric-box" style="min-width:160px;">
+              <span class="m-val">96.2%</span>
+              <span class="m-lbl">AUC-ROC</span>
+            </div>
+            <div class="metric-box" style="min-width:160px;">
+              <span class="m-val">0.90</span>
+              <span class="m-lbl">F1 Score</span>
+            </div>
+            <div class="metric-box" style="min-width:160px;">
+              <span class="m-val">~0.1s</span>
+              <span class="m-lbl">Inference (ONNX)</span>
+            </div>
+          </div>
+
+          <div>
+            <div class="label">MLOps outcomes</div>
+            <ul class="bullet-list sm">
+              <li>Fully reproducible: any commit restores exact data + model via DVC</li>
+              <li>Zero-touch deploy: push to main → Docker images auto-published</li>
+              <li>Model gating prevents regressions from reaching production</li>
+            </ul>
+          </div>
+          <div>
+            <div class="label">Limitations &amp; future work</div>
+            <ul class="bullet-list sm">
+              <li>CIFAKE is low-resolution (32×32 upscaled) — real-world images differ</li>
+              <li>Next: retrain on DALL-E 3 &amp; Midjourney for broader generator coverage</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- RIGHT — evaluation charts -->
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;border-left:1px solid var(--border);">
+          <img src="../models/efficientnet_v1/evaluation.png" alt="Confusion matrix, training curves and ROC curve"
+               style="max-width:100%;max-height:100%;object-fit:contain;display:block;padding:16px;filter:brightness(0.95);">
+        </div>
+
+      </div>
+
+      <div class="slide-footer">
+        <span class="footer-team">TSM_MACHLEDATA — ZHAW 2026</span>
+        <span class="footer-pager">13 / 14</span>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════
+         SLIDE 14 — DEMO / CLOSE
+    ═══════════════════════════════════════════ -->
+    <section class="slide" data-num="14">
+      <div class="cover-noise"></div>
+
+      <div style="flex:1;display:flex;flex-direction:row;align-items:stretch;">
+
+        <!-- LEFT — text -->
+        <div style="flex:0 0 50%;display:flex;flex-direction:column;justify-content:center;padding:0 60px 0 72px;">
+          <div style="font-family:var(--mono);font-size:13px;letter-spacing:0.2em;color:var(--neon);margin-bottom:32px;">
+            TEAM 10 &nbsp;·&nbsp; ZHAW SPRING 2026
+          </div>
+          <div style="font-family:var(--serif);font-style:italic;font-size:80px;color:var(--white);line-height:1.1;margin-bottom:28px;">
+            Live Demo
+          </div>
+          <div style="font-family:var(--sans);font-size:22px;color:var(--white-dim);font-weight:300;margin-bottom:44px;line-height:1.6;">
+            Upload an image — real or AI-generated — and let the model decide.
+            Then take the challenge: can you beat it?
+          </div>
+          <div style="display:flex;flex-direction:column;gap:18px;margin-bottom:36px;">
+            <div style="display:flex;gap:16px;align-items:flex-start;">
+              <span style="font-family:var(--mono);font-size:11px;color:var(--neon);letter-spacing:0.18em;padding-top:3px;flex:0 0 100px;">REPOSITORY</span>
+              <span style="font-family:var(--mono);font-size:16px;color:var(--white-dim);">github.com/marcosncosta1/ai-image-detector</span>
+            </div>
+            <div style="display:flex;gap:16px;align-items:flex-start;">
+              <span style="font-family:var(--mono);font-size:11px;color:var(--neon);letter-spacing:0.18em;padding-top:3px;flex:0 0 100px;">DEPLOY</span>
+              <span style="font-family:var(--mono);font-size:16px;color:var(--white-dim);">docker compose -f docker-compose.prod.yml up</span>
+            </div>
+          </div>
+          <div style="font-family:var(--mono);font-size:13px;color:var(--faint);line-height:1.8;">
+            EfficientNet-B0 · ONNX · FastAPI · DVC · MLflow<br>Node.js · Docker · GitHub Actions
+          </div>
+        </div>
+
+        <!-- RIGHT — UI screenshot -->
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;border-left:1px solid rgba(200,255,0,0.12);background:var(--panel);">
+          <img src="../imgs/UI-explain-preview.png" alt="Live demo — detector UI with GradCAM"
+               style="max-width:100%;max-height:100%;object-fit:contain;display:block;padding:24px;">
+        </div>
+
+      </div>
+
+      <div class="slide-footer">
+        <span class="footer-team">TSM_MACHLEDATA — ZHAW 2026</span>
+        <span class="footer-pager">14 / 14</span>
+      </div>
+    </section>
+
+  </div><!-- /deck-scaler -->
 </div><!-- /deck-wrapper -->
 
-<!-- Navigation controls -->
-<div id="nav">
-  <button id="btn-prev">◀</button>
-  <span id="nav-info">1 / 15</span>
-  <button id="btn-next">▶</button>
-  <span style="margin-left:8px;opacity:0.5;">← → keys</span>
-</div>
+<div id="nav-hint">← → ARROW KEYS &nbsp;·&nbsp; SPACE &nbsp;·&nbsp; 1-9 TO JUMP</div>
 
 <script>
-(function() {
-  const slides = document.querySelectorAll('.slide');
-  const total = slides.length;
-  let current = 0;
+(function () {
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const scaler = document.getElementById('deck-scaler');
+  const total  = 14;
+  let   cur    = 0;
 
-  const info = document.getElementById('nav-info');
-  const wrapper = document.getElementById('deck-wrapper');
-  const deck = document.getElementById('deck');
-
+  /* ── scaling ── */
   function scale() {
-    const ww = wrapper.clientWidth;
-    const wh = wrapper.clientHeight;
-    const sw = 1920, sh = 1080;
-    const s = Math.min(ww / sw, wh / sh);
-    deck.style.transform = `scale(${s})`;
+    const sx = window.innerWidth  / 1920;
+    const sy = window.innerHeight / 1080;
+    const s  = Math.min(sx, sy);
+    scaler.style.transform = `scale(${s})`;
+    const left = (window.innerWidth  - 1920 * s) / 2;
+    const top  = (window.innerHeight - 1080 * s) / 2;
+    scaler.style.position = 'absolute';
+    scaler.style.left = left + 'px';
+    scaler.style.top  = top  + 'px';
   }
-
-  function show(idx) {
-    slides.forEach((s, i) => {
-      s.classList.toggle('active', i === idx);
-    });
-    info.textContent = `${idx + 1} / ${total}`;
-    current = idx;
-  }
-
-  document.getElementById('btn-prev').addEventListener('click', () => {
-    if (current > 0) show(current - 1);
-  });
-  document.getElementById('btn-next').addEventListener('click', () => {
-    if (current < total - 1) show(current + 1);
-  });
-  document.addEventListener('keydown', e => {
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
-      e.preventDefault();
-      if (current < total - 1) show(current + 1);
-    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-      e.preventDefault();
-      if (current > 0) show(current - 1);
-    } else if (e.key === 'Home') {
-      show(0);
-    } else if (e.key === 'End') {
-      show(total - 1);
-    }
-  });
-
-  window.addEventListener('resize', scale);
   scale();
-  show(0);
+  window.addEventListener('resize', scale);
+
+  /* ── navigation ── */
+  function go(n) {
+    slides[cur].classList.remove('active');
+    cur = Math.max(0, Math.min(total - 1, n));
+    slides[cur].classList.add('active');
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ')      go(cur + 1);
+    else if (e.key === 'ArrowLeft')                    go(cur - 1);
+    else if (e.key === 'ArrowUp' || e.key === 'Home')  go(0);
+    else if (e.key === 'ArrowDown' || e.key === 'End') go(total - 1);
+    else if (e.key >= '1' && e.key <= '9')             go(parseInt(e.key) - 1);
+  });
+
+  /* ── click/touch ── */
+  document.addEventListener('click', e => {
+    const x = e.clientX / window.innerWidth;
+    go(x > 0.5 ? cur + 1 : cur - 1);
+  });
+
+  let tx = 0;
+  document.addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, { passive: true });
+  document.addEventListener('touchend',   e => {
+    const dx = e.changedTouches[0].clientX - tx;
+    if (Math.abs(dx) > 40) go(dx < 0 ? cur + 1 : cur - 1);
+  });
 })();
 </script>
 </body>
