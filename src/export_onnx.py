@@ -32,22 +32,25 @@ def export_onnx(
 
     # ── rebuild model architecture (must match training) ──────────────────
     # The Kaggle notebook replaced only classifier[1] (the default 1000-class
-    # Linear) with a Sequential(Dropout, Linear(1280→1)), leaving classifier[0]
-    # (the original Dropout) intact.  This produces keys:
-    #   classifier.0.*  → original Dropout  (no params)
-    #   classifier.1.0  → added Dropout     (no params)
-    #   classifier.1.1  → Linear(1280, 1)   (weight + bias)
+    # Linear) with a Sequential(Dropout, Linear(in_features→2)), leaving
+    # classifier[0] (the original Dropout) intact.  This produces keys:
+    #   classifier.0.*  → original Dropout       (no params)
+    #   classifier.1.0  → added Dropout          (no params)
+    #   classifier.1.1  → Linear(1280, 2)        (weight + bias)
+    # 2 outputs = binary softmax (real vs fake), matching api/model.py.
     model = tvm.efficientnet_b0(weights=None)
+    in_features = model.classifier[1].in_features
     model.classifier[1] = torch.nn.Sequential(
         torch.nn.Dropout(p=0.2),
-        torch.nn.Linear(1280, 1),
+        torch.nn.Linear(in_features, 2),
     )
-    state = torch.load(str(weights_path), map_location="cpu")
+    state = torch.load(str(weights_path), map_location="cpu", weights_only=False)
     model.load_state_dict(state)
     model.eval()
 
     # ── labels ───────────────────────────────────────────────────────────
-    labels = {"0": "real", "1": "fake"}
+    # Must match CLASSES in api/model.py: index 0 = fake, index 1 = real.
+    labels = {"0": "fake", "1": "real"}
     labels_path = output_dir / "labels.json"
     labels_path.write_text(json.dumps(labels))
 
@@ -59,11 +62,11 @@ def export_onnx(
         dummy,
         str(onnx_path),
         input_names=["input"],
-        output_names=["output"],
-        opset_version=14,
+        output_names=["logits"],
+        opset_version=17,
         dynamic_axes={
-            "input":  {0: "batch_size"},
-            "output": {0: "batch_size"},
+            "input":  {0: "batch"},
+            "logits": {0: "batch"},
         },
     )
     print(f"ONNX model → {onnx_path}  ({onnx_path.stat().st_size // 1024} KB)")
