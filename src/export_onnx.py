@@ -31,12 +31,16 @@ def export_onnx(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # ── rebuild model architecture (must match training) ──────────────────
+    # The Kaggle notebook replaced only classifier[1] (the default 1000-class
+    # Linear) with a Sequential(Dropout, Linear(1280→1)), leaving classifier[0]
+    # (the original Dropout) intact.  This produces keys:
+    #   classifier.0.*  → original Dropout  (no params)
+    #   classifier.1.0  → added Dropout     (no params)
+    #   classifier.1.1  → Linear(1280, 1)   (weight + bias)
     model = tvm.efficientnet_b0(weights=None)
-    model.classifier = torch.nn.Sequential(
-        torch.nn.Dropout(p=0.2, inplace=True),
-        torch.nn.Linear(1280, 512),
-        torch.nn.ReLU(),
-        torch.nn.Linear(512, 1),
+    model.classifier[1] = torch.nn.Sequential(
+        torch.nn.Dropout(p=0.2),
+        torch.nn.Linear(1280, 1),
     )
     state = torch.load(str(weights_path), map_location="cpu")
     model.load_state_dict(state)
