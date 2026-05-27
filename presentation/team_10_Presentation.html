@@ -93,20 +93,20 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
 }
 .slide-num {
   font-family: var(--mono);
-  font-size: 13px;
+  font-size: 25px;
   letter-spacing: 0.18em;
   color: var(--neon);
 }
 .slide-title {
   font-family: var(--serif);
   font-style: italic;
-  font-size: 52px;
+  font-size: 82px;
   color: var(--white);
   line-height: 1.05;
 }
 .slide-sub {
   font-family: var(--mono);
-  font-size: 13px;
+  font-size: 20px;
   letter-spacing: 0.12em;
   color: var(--faint);
   text-transform: uppercase;
@@ -159,13 +159,13 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
 }
 .footer-team {
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: 18px;
   color: var(--faint);
   letter-spacing: 0.1em;
 }
 .footer-pager {
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: 18px;
   color: var(--faint);
 }
 
@@ -184,7 +184,7 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
 ────────────────────────────────────────── */
 .label {
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: 25px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--neon);
@@ -200,11 +200,11 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
 
 .mono-note {
   font-family: var(--mono);
-  font-size: 16px;
+  font-size: 20px;
   color: var(--faint);
   line-height: 1.6;
 }
-.mono-note.sm { font-size: 13px; }
+.mono-note.sm { font-size: 20px; }
 
 /* ──────────────────────────────────────────
    STAT BLOCK
@@ -225,13 +225,13 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
 .stat-val {
   font-family: var(--serif);
   font-style: italic;
-  font-size: 52px;
+  font-size: 62px;
   color: var(--neon);
   line-height: 1;
 }
 .stat-lbl {
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: 18px;
   letter-spacing: 0.15em;
   text-transform: uppercase;
   color: var(--faint);
@@ -244,14 +244,14 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 20px;
 }
 .bullet-list li {
   display: flex;
   align-items: flex-start;
   gap: 16px;
   font-family: var(--sans);
-  font-size: 24px;
+  font-size: 28px;
   color: var(--white-dim);
   line-height: 1.5;
 }
@@ -261,7 +261,7 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
   flex: 0 0 auto;
   margin-top: 2px;
 }
-.bullet-list.sm li { font-size: 20px; }
+.bullet-list.sm li { font-size: 28px; }
 
 /* ──────────────────────────────────────────
    PANEL / CODE BOX
@@ -274,7 +274,7 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
 }
 .code-block {
   font-family: var(--mono);
-  font-size: 18px;
+  font-size: 28px;
   color: var(--white-dim);
   line-height: 1.7;
 }
@@ -303,10 +303,10 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
   justify-content: center;
   gap: 12px;
 }
-.flow-cell .fc-num    { font-family: var(--mono); font-size: 12px; letter-spacing: 0.18em; color: var(--neon); }
+.flow-cell .fc-num    { font-family: var(--mono); font-size: 18px; letter-spacing: 0.18em; color: var(--neon); }
 .flow-cell .fc-icon   { height: 80px; width: auto; object-fit: contain; display: block; }
-.flow-cell .fc-name   { font-family: var(--serif); font-style: italic; font-size: 34px; color: var(--white); line-height: 1.1; }
-.flow-cell .fc-detail { font-family: var(--mono); font-size: 14px; color: var(--faint); line-height: 1.55; }
+.flow-cell .fc-name   { font-family: var(--serif); font-style: italic; font-size: 48px; color: var(--white); line-height: 1.1; }
+.flow-cell .fc-detail { font-family: var(--mono); font-size: 18px; color: var(--faint); line-height: 1.55; }
 
 /* ──────────────────────────────────────────
    COMPONENTS / EVIDENCE GRID  (pitch deck §04)
@@ -332,9 +332,9 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
 .ev-cell.empty { background: rgba(200,255,0,0.02); }
 .ev-cell .ev-top  { display: flex; align-items: center; gap: 14px; margin-bottom: 4px; }
 .ev-cell .ev-icon { height: 36px; width: 36px; object-fit: contain; flex: 0 0 auto; }
-.ev-cell .ev-name { font-family: var(--serif); font-style: italic; font-size: 26px; color: var(--white); }
-.ev-cell .ev-role { font-family: var(--mono); font-size: 10px; letter-spacing: 0.2em; color: var(--neon); text-transform: uppercase; }
-.ev-cell .ev-desc { font-family: var(--mono); font-size: 13px; color: var(--faint); line-height: 1.5; }
+.ev-cell .ev-name { font-family: var(--serif); font-style: italic; font-size: 50px; color: var(--white); }
+.ev-cell .ev-role { font-family: var(--mono); font-size: 18px; letter-spacing: 0.2em; color: var(--neon); text-transform: uppercase; }
+.ev-cell .ev-desc { font-family: var(--mono); font-size: 15px; color: var(--faint); line-height: 1.5; }
 
 /* ──────────────────────────────────────────
    DVC FLOW DIAGRAM
@@ -379,7 +379,7 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
 .step-row:first-child { border-top: 1px solid var(--border); }
 .step-num {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 28px;
   color: var(--neon);
   letter-spacing: 0.12em;
   padding: 16px 20px 16px 0;
@@ -390,7 +390,7 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
 .step-name {
   font-family: var(--serif);
   font-style: italic;
-  font-size: 22px;
+  font-size: 28px;
   color: var(--white);
   padding: 14px 24px;
   border-left: 1px solid var(--border);
@@ -401,7 +401,7 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
 }
 .step-detail {
   font-family: var(--mono);
-  font-size: 14px;
+  font-size: 20px;
   color: var(--faint);
   padding: 14px 24px;
   display: flex;
@@ -416,7 +416,7 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
 .tag {
   display: inline-block;
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: 18px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   background: var(--neon-dim);
@@ -547,13 +547,13 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
 
         <!-- LEFT — text -->
         <div style="flex:0 0 56%;display:flex;flex-direction:column;justify-content:center;padding:0 64px 0 72px;">
-          <div style="font-family:var(--mono);font-size:13px;letter-spacing:0.2em;color:var(--neon);margin-bottom:32px;">
+          <div style="font-family:var(--mono);font-size:23px;letter-spacing:0.2em;color:var(--neon);margin-bottom:32px;">
             TEAM 10 &nbsp;·&nbsp; TSM_MACHLEDATA &nbsp;·&nbsp; ZHAW SPRING 2026
           </div>
-          <div style="font-family:var(--serif);font-style:italic;font-size:88px;color:var(--white);line-height:1.05;margin-bottom:24px;">
+          <div style="font-family:var(--serif);font-style:italic;font-size:118px;color:var(--white);line-height:1.05;margin-bottom:24px;">
             Is this image real?
           </div>
-          <div style="font-family:var(--sans);font-size:24px;color:var(--white-dim);font-weight:300;margin-bottom:48px;max-width:760px;line-height:1.55;">
+          <div style="font-family:var(--sans);font-size:32px;color:var(--white-dim);font-weight:300;margin-bottom:48px;max-width:760px;line-height:1.55;">
             An end-to-end MLOps system for AI-generated image detection —
             from Kaggle training to production-grade inference.
           </div>
@@ -916,7 +916,7 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
     <section class="slide" data-num="7">
       <div class="slide-header" style="padding-bottom:28px;">
         <span class="slide-num">07</span>
-        <h2 class="slide-title">Components / Entered into Evidence</h2>
+        <h2 class="slide-title">Components</h2>
         <span class="slide-sub">Tools &amp; Technologies</span>
       </div>
       <div class="divider"></div>
