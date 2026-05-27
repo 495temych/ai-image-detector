@@ -39,7 +39,7 @@
 }
 
 html { background: #000; }
-body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
+body { background: #000; overflow: hidden; height: 100vh; width: 100vw; font-size: 18px; }
 
 /* ──────────────────────────────────────────
    DECK SCALER
@@ -93,20 +93,20 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
 }
 .slide-num {
   font-family: var(--mono);
-  font-size: 25px;
+  font-size: 13px;
   letter-spacing: 0.18em;
   color: var(--neon);
 }
 .slide-title {
   font-family: var(--serif);
   font-style: italic;
-  font-size: 82px;
+  font-size: 52px;
   color: var(--white);
   line-height: 1.05;
 }
 .slide-sub {
   font-family: var(--mono);
-  font-size: 20px;
+  font-size: 13px;
   letter-spacing: 0.12em;
   color: var(--faint);
   text-transform: uppercase;
@@ -159,13 +159,13 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
 }
 .footer-team {
   font-family: var(--mono);
-  font-size: 18px;
+  font-size: 12px;
   color: var(--faint);
   letter-spacing: 0.1em;
 }
 .footer-pager {
   font-family: var(--mono);
-  font-size: 18px;
+  font-size: 12px;
   color: var(--faint);
 }
 
@@ -184,7 +184,7 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
 ────────────────────────────────────────── */
 .label {
   font-family: var(--mono);
-  font-size: 25px;
+  font-size: 12px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--neon);
@@ -200,11 +200,11 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
 
 .mono-note {
   font-family: var(--mono);
-  font-size: 20px;
+  font-size: 16px;
   color: var(--faint);
   line-height: 1.6;
 }
-.mono-note.sm { font-size: 20px; }
+.mono-note.sm { font-size: 13px; }
 
 /* ──────────────────────────────────────────
    STAT BLOCK
@@ -225,13 +225,13 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
 .stat-val {
   font-family: var(--serif);
   font-style: italic;
-  font-size: 62px;
+  font-size: 52px;
   color: var(--neon);
   line-height: 1;
 }
 .stat-lbl {
   font-family: var(--mono);
-  font-size: 18px;
+  font-size: 12px;
   letter-spacing: 0.15em;
   text-transform: uppercase;
   color: var(--faint);
@@ -244,14 +244,14 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
 }
 .bullet-list li {
   display: flex;
   align-items: flex-start;
   gap: 16px;
   font-family: var(--sans);
-  font-size: 28px;
+  font-size: 24px;
   color: var(--white-dim);
   line-height: 1.5;
 }
@@ -261,7 +261,7 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
   flex: 0 0 auto;
   margin-top: 2px;
 }
-.bullet-list.sm li { font-size: 28px; }
+.bullet-list.sm li { font-size: 20px; }
 
 /* ──────────────────────────────────────────
    PANEL / CODE BOX
@@ -274,7 +274,7 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
 }
 .code-block {
   font-family: var(--mono);
-  font-size: 28px;
+  font-size: 18px;
   color: var(--white-dim);
   line-height: 1.7;
 }
@@ -303,10 +303,10 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
   justify-content: center;
   gap: 12px;
 }
-.flow-cell .fc-num    { font-family: var(--mono); font-size: 18px; letter-spacing: 0.18em; color: var(--neon); }
+.flow-cell .fc-num    { font-family: var(--mono); font-size: 12px; letter-spacing: 0.18em; color: var(--neon); }
 .flow-cell .fc-icon   { height: 80px; width: auto; object-fit: contain; display: block; }
-.flow-cell .fc-name   { font-family: var(--serif); font-style: italic; font-size: 48px; color: var(--white); line-height: 1.1; }
-.flow-cell .fc-detail { font-family: var(--mono); font-size: 18px; color: var(--faint); line-height: 1.55; }
+.flow-cell .fc-name   { font-family: var(--serif); font-style: italic; font-size: 34px; color: var(--white); line-height: 1.1; }
+.flow-cell .fc-detail { font-family: var(--mono); font-size: 14px; color: var(--faint); line-height: 1.55; }
 
 /* ──────────────────────────────────────────
    COMPONENTS / EVIDENCE GRID  (pitch deck §04)
@@ -330,70 +330,11 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
   gap: 6px;
 }
 .ev-cell.empty { background: rgba(200,255,0,0.02); }
-.ev-cell .ev-top  { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
-.ev-cell .ev-icon { height: 32px; width: 32px; object-fit: contain; flex: 0 0 auto; }
-.ev-cell .ev-name { font-family: var(--serif); font-style: italic; font-size: 34px; color: var(--white); line-height: 1.1; }
-.ev-cell .ev-role { font-family: var(--mono); font-size: 14px; letter-spacing: 0.18em; color: var(--neon); text-transform: uppercase; }
-.ev-cell .ev-desc { font-family: var(--mono); font-size: 15px; color: var(--faint); line-height: 1.45; }
-
-/* ──────────────────────────────────────────
-   WORKFLOW SCHEMATIC  (slide 06)
-────────────────────────────────────────── */
-.wf-section { margin-bottom: 16px; }
-.wf-section-label {
-  font-family: var(--mono);
-  font-size: 15px;
-  letter-spacing: 0.18em;
-  color: var(--neon);
-  text-transform: uppercase;
-  margin-bottom: 7px;
-}
-.wf-chain {
-  display: flex;
-  align-items: center;
-  flex-wrap: nowrap;
-  width: 100%;
-}
-.wf-node {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  padding: 10px 14px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  min-width: 100px;
-  text-align: center;
-  font-size: 16px;
-  flex: 1;
-}
-.wf-node strong {
-  font-family: var(--mono);
-  font-size: 16px;
-  color: var(--white);
-  font-weight: 700;
-  display: block;
-  white-space: nowrap;
-}
-.wf-node span {
-  font-family: var(--mono);
-  font-size: 14px;
-  color: var(--faint);
-  display: block;
-  line-height: 1.3;
-  white-space: nowrap;
-}
-.wf-arrow {
-  font-family: var(--mono);
-  font-size: 20px;
-  color: var(--neon);
-  padding: 0 5px;
-  flex: 0 0 auto;
-}
-.wf-gate  { border-color: var(--neon) !important; box-shadow: 0 0 5px rgba(200,255,0,0.25); }
-.wf-explain { border-color: var(--blue) !important; box-shadow: 0 0 5px rgba(59,130,246,0.25); }
-.wf-planned { opacity: 0.45; }
+.ev-cell .ev-top  { display: flex; align-items: center; gap: 14px; margin-bottom: 4px; }
+.ev-cell .ev-icon { height: 36px; width: 36px; object-fit: contain; flex: 0 0 auto; }
+.ev-cell .ev-name { font-family: var(--serif); font-style: italic; font-size: 26px; color: var(--white); }
+.ev-cell .ev-role { font-family: var(--mono); font-size: 10px; letter-spacing: 0.2em; color: var(--neon); text-transform: uppercase; }
+.ev-cell .ev-desc { font-family: var(--mono); font-size: 13px; color: var(--faint); line-height: 1.5; }
 
 /* ──────────────────────────────────────────
    DVC FLOW DIAGRAM
@@ -438,7 +379,7 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
 .step-row:first-child { border-top: 1px solid var(--border); }
 .step-num {
   font-family: var(--mono);
-  font-size: 28px;
+  font-size: 11px;
   color: var(--neon);
   letter-spacing: 0.12em;
   padding: 16px 20px 16px 0;
@@ -449,7 +390,7 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
 .step-name {
   font-family: var(--serif);
   font-style: italic;
-  font-size: 28px;
+  font-size: 22px;
   color: var(--white);
   padding: 14px 24px;
   border-left: 1px solid var(--border);
@@ -460,7 +401,7 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
 }
 .step-detail {
   font-family: var(--mono);
-  font-size: 20px;
+  font-size: 14px;
   color: var(--faint);
   padding: 14px 24px;
   display: flex;
@@ -475,7 +416,7 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
 .tag {
   display: inline-block;
   font-family: var(--mono);
-  font-size: 18px;
+  font-size: 12px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   background: var(--neon-dim);
@@ -524,6 +465,90 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
 }
 
 /* ──────────────────────────────────────────
+   WORKFLOW SCHEMATIC
+────────────────────────────────────────── */
+.wf-section { margin-bottom: 16px; }
+.wf-section-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--neon);
+  text-transform: uppercase;
+  margin-bottom: 7px;
+}
+.wf-chain {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  width: 100%;
+}
+.wf-node {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 7px 11px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 84px;
+  text-align: center;
+  font-size: 14px;
+  flex: 1;
+}
+.wf-node strong {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--white);
+  font-weight: 700;
+  display: block;
+  white-space: nowrap;
+}
+.wf-node span {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--faint);
+  display: block;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+.wf-arrow {
+  font-family: var(--mono);
+  font-size: 16px;
+  color: var(--neon);
+  padding: 0 5px;
+  flex: 0 0 auto;
+}
+.wf-gate  { border-color: var(--neon) !important; box-shadow: 0 0 5px rgba(200,255,0,0.25); }
+.wf-explain { border-color: var(--blue) !important; box-shadow: 0 0 5px rgba(59,130,246,0.25); }
+.wf-planned { opacity: 0.45; }
+
+/* ──────────────────────────────────────────
+   EXTRA FONT-SIZE CLASSES (used by new slides)
+────────────────────────────────────────── */
+.bullets li   { font-size: 21px; }
+.arch-sub     { font-size: 15px; color: var(--faint); font-family: var(--sans); line-height: 1.55; }
+.pillar-v     { font-size: 17px; }
+.ci-detail    { font-size: 16px; }
+.ep-desc      { font-size: 16px; }
+
+/* ──────────────────────────────────────────
+   EQUATION BAR
+────────────────────────────────────────── */
+.eq-bar {
+  background: var(--neon-dim);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--neon);
+  padding: 14px 20px;
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--neon);
+  line-height: 1.65;
+  margin-top: 20px;
+}
+.eq-bar .eq-dim { color: var(--faint); }
+
+/* ──────────────────────────────────────────
    KEYBOARD NAV
 ────────────────────────────────────────── */
 #nav-hint {
@@ -537,58 +562,6 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
   pointer-events: none;
   letter-spacing: 0.15em;
 }
-
-/* ── PRINT / PDF EXPORT ──────────────────────────────────────────────────── */
-@media print {
-  /* 1920×1080 native — no scaling needed, Chrome maps px→pt at 96dpi */
-  @page { size: 1920px 1080px; margin: 0; }
-
-  html, body {
-    width: 1920px !important;
-    height: auto !important;
-    overflow: visible !important;
-    background: #000 !important;
-  }
-
-  /* undo the fixed/flex centering wrapper */
-  #deck-wrapper {
-    position: static !important;
-    inset: auto !important;
-    display: block !important;
-    width: 1920px !important;
-    height: auto !important;
-    background: #000 !important;
-  }
-
-  /* undo the JS-applied transform (beforeprint handler also clears inline style) */
-  #deck-scaler {
-    width: 1920px !important;
-    height: auto !important;
-    transform: none !important;
-    position: static !important;
-    left: auto !important;
-    top: auto !important;
-  }
-
-  /* hide navigation */
-  #nav-hint, button { display: none !important; }
-
-  /* one slide per page */
-  .slide {
-    display: flex !important;
-    position: relative !important;
-    width: 1920px !important;
-    height: 1080px !important;
-    overflow: hidden !important;
-    page-break-after: always;
-    break-after: page;
-  }
-
-  .slide:last-of-type {
-    page-break-after: avoid;
-    break-after: avoid;
-  }
-}
 </style>
 </head>
 <body>
@@ -599,20 +572,20 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
     <!-- ═══════════════════════════════════════════
          SLIDE 01 — COVER
     ═══════════════════════════════════════════ -->
-    <section class="slide active" data-num="1">
+    <section id="s01" class="slide active" data-num="1">
       <div class="cover-noise"></div>
 
       <div style="flex:1;display:flex;flex-direction:row;align-items:stretch;">
 
         <!-- LEFT — text -->
         <div style="flex:0 0 56%;display:flex;flex-direction:column;justify-content:center;padding:0 64px 0 72px;">
-          <div style="font-family:var(--mono);font-size:23px;letter-spacing:0.2em;color:var(--neon);margin-bottom:32px;">
+          <div style="font-family:var(--mono);font-size:13px;letter-spacing:0.2em;color:var(--neon);margin-bottom:32px;">
             TEAM 10 &nbsp;·&nbsp; TSM_MACHLEDATA &nbsp;·&nbsp; ZHAW SPRING 2026
           </div>
-          <div style="font-family:var(--serif);font-style:italic;font-size:118px;color:var(--white);line-height:1.05;margin-bottom:24px;">
+          <div style="font-family:var(--serif);font-style:italic;font-size:88px;color:var(--white);line-height:1.05;margin-bottom:24px;">
             Is this image real?
           </div>
-          <div style="font-family:var(--sans);font-size:32px;color:var(--white-dim);font-weight:300;margin-bottom:48px;max-width:760px;line-height:1.55;">
+          <div style="font-family:var(--sans);font-size:24px;color:var(--white-dim);font-weight:300;margin-bottom:48px;max-width:760px;line-height:1.55;">
             An end-to-end MLOps system for AI-generated image detection —
             from Kaggle training to production-grade inference.
           </div>
@@ -658,59 +631,66 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
 
       <div class="slide-footer">
         <span class="footer-team">TSM_MACHLEDATA — ZHAW 2026</span>
-        <span class="footer-pager">1 / 14</span>
+        <span class="footer-pager">01 / 15</span>
       </div>
     </section>
 
     <!-- ═══════════════════════════════════════════
-         SLIDE 02 — PROBLEM & MOTIVATION
+         SLIDE 02 — PROBLEM & OUR ANSWER
     ═══════════════════════════════════════════ -->
-    <section class="slide" data-num="2">
+    <section id="s02" class="slide" data-num="2">
       <div class="slide-header">
         <span class="slide-num">02</span>
         <h2 class="slide-title">The Problem</h2>
-        <span class="slide-sub">Motivation &amp; Our Answer</span>
+        <span class="slide-sub">Problem &amp; Our Answer</span>
       </div>
       <div class="divider"></div>
 
       <div class="slide-body">
+
+        <!-- LEFT — The Problem -->
         <div class="col-55">
-          <div class="label">Why it matters</div>
-          <ul class="bullet-list">
-            <li>Generative AI has made photorealistic fake images trivially cheap to produce</li>
-            <li>Misinformation, fraud, and synthetic media manipulation are accelerating</li>
-            <li>Human visual inspection is no longer reliable</li>
-            <li>A deployable, explainable detector is needed</li>
+          <h2 class="slide-title" style="font-size:38px;margin-bottom:28px;">The Problem</h2>
+          <ul class="bullet-list sm">
+            <li>Generative AI makes photorealistic fakes trivially cheap to produce at scale</li>
+            <li>Human visual inspection is no longer reliable — even experts are fooled consistently</li>
+            <li>Detecting AI-generated images requires a system that is deployable, maintainable, and trustworthy</li>
+            <li>A research notebook is not enough — a production pipeline is required</li>
           </ul>
         </div>
 
-        <div class="col-45">
-          <div class="label">Our approach</div>
-          <div class="panel-box" style="margin-bottom:24px;">
-            <div class="code-block">
-              <div><span class="kw">INPUT</span>  → any image (URL or upload)</div>
-              <div><span class="kw">MODEL</span>  → EfficientNet-B0, fine-tuned</div>
-              <div><span class="kw">OUTPUT</span> → Real / AI-generated + confidence</div>
-              <div><span class="kw">EXPLAIN</span>→ GradCAM heatmap overlay</div>
-            </div>
-          </div>
-          <div class="mono-note sm">
-            Full MLOps lifecycle: versioned data, tracked experiments,<br>
-            gated model registry, automated CI/CD, containerised serving.
+        <!-- RIGHT — Our Answer -->
+        <div class="col-45" style="border-left:1px solid var(--border);padding-left:40px;">
+          <h2 class="slide-title" style="font-size:38px;margin-bottom:16px;">Our Answer</h2>
+          <p style="font-family:var(--sans);font-size:19px;color:var(--white-dim);line-height:1.6;margin-bottom:24px;">
+            We built an end-to-end MLOps pipeline — not just a model.
+            Every component is versioned, automated, and reproducible by design.
+          </p>
+          <ul class="bullet-list sm">
+            <li>Every dataset version is tracked and linked to the model that was trained on it</li>
+            <li>Every experiment is logged — metrics, parameters, and artifacts — so nothing is lost</li>
+            <li>A quality gate prevents any model that does not meet the accuracy threshold from reaching production</li>
+            <li>The full stack deploys with a single command, on any machine</li>
+            <li>New data triggers a new cycle — the pipeline is built to improve over time</li>
+          </ul>
+          <div class="eq-bar">
+            MODEL = ( code version · data version · experiment run )<br>
+            <span class="eq-dim">— miss any one, it is not reproducible</span>
           </div>
         </div>
+
       </div>
 
       <div class="slide-footer">
         <span class="footer-team">TSM_MACHLEDATA — ZHAW 2026</span>
-        <span class="footer-pager">2 / 14</span>
+        <span class="footer-pager">02 / 15</span>
       </div>
     </section>
 
     <!-- ═══════════════════════════════════════════
          SLIDE 03 — DATASET + DATA VERSIONING
     ═══════════════════════════════════════════ -->
-    <section class="slide" data-num="3">
+    <section id="s03" class="slide" data-num="3">
       <div class="slide-header">
         <span class="slide-num">03</span>
         <h2 class="slide-title">Dataset &amp; Data Versioning</h2>
@@ -778,14 +758,14 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
 
       <div class="slide-footer">
         <span class="footer-team">TSM_MACHLEDATA — ZHAW 2026</span>
-        <span class="footer-pager">3 / 14</span>
+        <span class="footer-pager">03 / 15</span>
       </div>
     </section>
 
     <!-- ═══════════════════════════════════════════
          SLIDE 04 — MODEL
     ═══════════════════════════════════════════ -->
-    <section class="slide" data-num="4">
+    <section id="s04" class="slide" data-num="4">
       <div class="slide-header">
         <span class="slide-num">04</span>
         <h2 class="slide-title">Model</h2>
@@ -834,14 +814,14 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
 
       <div class="slide-footer">
         <span class="footer-team">TSM_MACHLEDATA — ZHAW 2026</span>
-        <span class="footer-pager">4 / 14</span>
+        <span class="footer-pager">04 / 15</span>
       </div>
     </section>
 
     <!-- ═══════════════════════════════════════════
          SLIDE 05 — EXPERIMENT TRACKING
     ═══════════════════════════════════════════ -->
-    <section class="slide" data-num="5">
+    <section id="s05" class="slide" data-num="5">
       <div class="slide-header">
         <span class="slide-num">05</span>
         <h2 class="slide-title">Experiment Tracking</h2>
@@ -853,7 +833,7 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
         <div class="col-55">
           <div class="label">MLflow integration</div>
           <ul class="bullet-list sm" style="margin-bottom:28px;">
-            <li>Every training run logs: loss curves, accuracy, AUC-ROC, F1, confusion matrix</li>
+            <li>Logs per run: loss, accuracy, AUC-ROC, F1, confusion matrix — all linked to the DVC data hash</li>
             <li>Hyperparameters captured: LR, batch size, epochs, optimiser, scheduler</li>
             <li>Model artefacts registered to MLflow Model Registry on DagsHub</li>
             <li>Registry gate: accuracy ≥ 85% required for Staging → Production promotion</li>
@@ -894,18 +874,18 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
 
       <div class="slide-footer">
         <span class="footer-team">TSM_MACHLEDATA — ZHAW 2026</span>
-        <span class="footer-pager">5 / 14</span>
+        <span class="footer-pager">05 / 15</span>
       </div>
     </section>
 
     <!-- ═══════════════════════════════════════════
-         SLIDE 06 — PIPELINE / FLOW MAP
+         SLIDE 06 — END-TO-END PIPELINE
     ═══════════════════════════════════════════ -->
     <section id="s06" class="slide" data-num="6">
       <div class="slide-header" style="padding-bottom:20px;">
         <span class="slide-num">06</span>
-        <h2 class="slide-title" style="font-size:82px;">Pipeline / Flow Map</h2>
-        <span class="slide-sub">End-to-End</span>
+        <h2 class="slide-title" style="font-size:52px;">Pipeline / Flow Map</h2>
+        <span class="slide-sub">End-to-End — How Components Interact</span>
       </div>
       <div class="divider"></div>
 
@@ -935,9 +915,9 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
           <div class="wf-chain">
             <div class="wf-node"><strong>git push main</strong><span>trigger</span></div>
             <div class="wf-arrow">→</div>
-            <div class="wf-node"><strong>dvc pull</strong><span>pulls model weights</span></div>
+            <div class="wf-node"><strong>dvc pull</strong><span>restore data version</span></div>
             <div class="wf-arrow">→</div>
-            <div class="wf-node wf-gate"><strong>Metrics Gate</strong><span>accuracy ≥ 85%?</span></div>
+            <div class="wf-node wf-gate"><strong>Evaluate</strong><span>accuracy ≥ 85%?</span></div>
             <div class="wf-arrow">→</div>
             <div class="wf-node wf-gate"><strong>Register</strong><span>MLflow → Production</span></div>
             <div class="wf-arrow">→</div>
@@ -992,16 +972,18 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
 
       <div class="slide-footer">
         <span class="footer-team">TSM_MACHLEDATA — ZHAW 2026</span>
-        <span class="footer-pager">06 / 14</span>
+        <span class="footer-pager">06 / 15</span>
       </div>
     </section>
+
     <!-- ═══════════════════════════════════════════
          SLIDE 07 — COMPONENTS / ENTERED INTO EVIDENCE
     ═══════════════════════════════════════════ -->
     <section id="s07" class="slide" data-num="7">
       <div class="slide-header" style="padding-bottom:28px;">
         <span class="slide-num">07</span>
-        <h2 class="slide-title" style="font-size:82px;">Components </h2>        <span class="slide-sub">Tools &amp; Technologies</span>
+        <h2 class="slide-title">Components / Entered into Evidence</h2>
+        <span class="slide-sub">Tools &amp; Technologies</span>
       </div>
       <div class="divider"></div>
 
@@ -1109,14 +1091,14 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
 
       <div class="slide-footer" style="padding-top:20px;">
         <span class="footer-team">TSM_MACHLEDATA — ZHAW 2026</span>
-        <span class="footer-pager">07 / 14</span>
+        <span class="footer-pager">07 / 15</span>
       </div>
     </section>
 
     <!-- ═══════════════════════════════════════════
          SLIDE 08 — CI / CD PIPELINE
     ═══════════════════════════════════════════ -->
-    <section class="slide" data-num="8">
+    <section id="s08" class="slide" data-num="8">
       <div class="slide-header">
         <span class="slide-num">08</span>
         <h2 class="slide-title">CI / CD Pipeline</h2>
@@ -1130,8 +1112,8 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
           <div class="step-list" style="margin-bottom:24px;">
             <div class="step-row">
               <span class="step-num">01</span>
-              <span class="step-name">Validate</span>
-              <span class="step-detail">dvc pull → run validation → log metrics to MLflow</span>
+              <span class="step-name">Evaluate</span>
+              <span class="step-detail">dvc pull → run evaluation → log metrics to MLflow</span>
             </div>
             <div class="step-row">
               <span class="step-num">02</span>
@@ -1189,14 +1171,14 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
 
       <div class="slide-footer">
         <span class="footer-team">TSM_MACHLEDATA — ZHAW 2026</span>
-        <span class="footer-pager">8 / 14</span>
+        <span class="footer-pager">08 / 15</span>
       </div>
     </section>
 
     <!-- ═══════════════════════════════════════════
          SLIDE 09 — FASTAPI SERVING
     ═══════════════════════════════════════════ -->
-    <section class="slide" data-num="9">
+    <section id="s09" class="slide" data-num="9">
       <div class="slide-header">
         <span class="slide-num">09</span>
         <h2 class="slide-title">FastAPI Serving Layer</h2>
@@ -1258,7 +1240,7 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
 
       <div class="slide-footer">
         <span class="footer-team">TSM_MACHLEDATA — ZHAW 2026</span>
-        <span class="footer-pager">9 / 14</span>
+        <span class="footer-pager">09 / 15</span>
       </div>
     </section>
 
@@ -1329,7 +1311,7 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
     <section id="s11" class="slide" data-num="11">
       <div class="slide-header">
         <span class="slide-num">11</span>
-        <h2 class="slide-title">Mode 1 - Detector</h2>
+        <h2 class="slide-title">Mode 1 — Detector</h2>
         <span class="slide-sub">Upload · Predict · Explain</span>
       </div>
       <div class="divider"></div>
@@ -1367,7 +1349,7 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
     <section id="s12" class="slide" data-num="12">
       <div class="slide-header">
         <span class="slide-num">12</span>
-        <h2 class="slide-title">Mode 2 - Benchmark Challenge</h2>
+        <h2 class="slide-title">Mode 2 — Benchmark Challenge</h2>
         <span class="slide-sub">10-Image Quiz · Human vs Model</span>
       </div>
       <div class="divider"></div>
@@ -1405,7 +1387,7 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
     <section id="s13" class="slide" data-num="13">
       <div class="slide-header">
         <span class="slide-num">13</span>
-        <h2 class="slide-title">Mode 3 - Community Dashboard</h2>
+        <h2 class="slide-title">Mode 3 — Community Dashboard</h2>
         <span class="slide-sub">Leaderboard · SQLite · Human vs Model</span>
       </div>
       <div class="divider"></div>
@@ -1647,18 +1629,6 @@ body { background: #000; overflow: hidden; height: 100vh; width: 100vw; }
     const dx = e.changedTouches[0].clientX - tx;
     if (Math.abs(dx) > 40) go(dx < 0 ? cur + 1 : cur - 1);
   });
-
-  /* ── PDF print support ──────────────────────────────────────────────────
-     beforeprint fires when Cmd+P / Chrome headless --print-to-pdf begins.
-     We clear the JS-applied inline styles so @media print CSS takes over:
-     – #deck-wrapper: remove position:fixed so slides stack normally
-     – #deck-scaler:  remove transform:scale(…) so slides render at 1920px  */
-  window.addEventListener('beforeprint', function () {
-    document.getElementById('deck-wrapper').removeAttribute('style');
-    document.getElementById('deck-scaler').removeAttribute('style');
-    slides.forEach(s => s.removeAttribute('style'));
-  });
-  window.addEventListener('afterprint', function () { scale(); });
 })();
 </script>
 </body>
