@@ -22,7 +22,7 @@ jobs:
   # 1. Evaluate — run ONNX model on the test split, log to MLflow
   # ────────────────────────────────────────────────────────────────
   evaluate:
-    name: 📊 Evaluate model
+    name: 📊 Validate model
     runs-on: ubuntu-latest
     outputs:
       run_id: ${{ steps.run_eval.outputs.run_id }}
